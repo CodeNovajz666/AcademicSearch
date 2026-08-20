@@ -1,0 +1,29 @@
+# Java / Maven
+backend/target/
+*.class
+*.jar
+
+# Node
+node_modules/
+frontend-react/dist/
+frontend/dist/
+
+# 环境变量与密钥（严禁提交）
+.env
+.env.local
+*.env
+!*.env.example
+backend/src/main/resources/application-local.yml
+
+# 上传文件与运行时数据
+backend/uploads/
+uploads/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# 系统
+.DS_Store
+Thumbs.db
