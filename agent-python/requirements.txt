@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+openai
+mcp<2
+pymysql
+pyjwt
+python-dotenv
+pymilvus>=2.5,<2.6

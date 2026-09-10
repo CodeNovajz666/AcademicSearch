@@ -31,10 +31,16 @@ function AppShell() {
   )
 }
 
+/** 登录守卫：未登录访问任何功能页一律跳转登录 */
 function RequireAuth() {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" replace />
   return <AppShell />
+}
+
+function RedirectIfAuthed({ children }) {
+  const { user } = useAuth()
+  return user ? <Navigate to="/" replace /> : children
 }
 
 export default function App() {
@@ -45,8 +51,8 @@ export default function App() {
           <AuthProvider>
             <ParticleField />
             <Routes>
-              <Route path="/login" element={<LoginView />} />
-              <Route path="/register" element={<RegisterView />} />
+              <Route path="/login" element={<RedirectIfAuthed><LoginView /></RedirectIfAuthed>} />
+              <Route path="/register" element={<RedirectIfAuthed><RegisterView /></RedirectIfAuthed>} />
               <Route element={<RequireAuth />}>
                 <Route path="/" element={<HomeView />} />
                 <Route path="/search" element={<SearchView />} />

@@ -1,0 +1,41 @@
+package com.example.literaturesearch.service;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class LiteratureServiceTest {
+
+    private final LiteratureService literatureService = new LiteratureService(null, null);
+
+    @Test
+    void extractAbstract_nullOrEmpty_returnsNull() {
+        assertNull(literatureService.extractAbstract(null));
+        assertNull(literatureService.extractAbstract(""));
+        assertNull(literatureService.extractAbstract("正文里没有任何标记的内容"));
+    }
+
+    @Test
+    void extractAbstract_chineseMarker_extractsFullText() {
+        String content = "论文标题\n摘要：本文提出了一种新的检索方法。Keywords: 检索\n后续章节内容";
+        assertEquals("本文提出了一种新的检索方法。", literatureService.extractAbstract(content));
+    }
+
+    @Test
+    void extractAbstract_englishMarker_stopsAtKeywords() {
+        String content = "Paper Title\nAbstract—We propose a novel method. Keywords: retrieval, embedding";
+        assertEquals("We propose a novel method.", literatureService.extractAbstract(content));
+    }
+
+    @Test
+    void extractAbstract_englishMarker_lowercase() {
+        String content = "Paper Title\nabstract: Vector search is useful. introduction follows";
+        assertEquals("Vector search is useful.", literatureService.extractAbstract(content));
+    }
+
+    @Test
+    void extractAbstract_stopsAtIntroductionWhenNoKeywords() {
+        String content = "Title\nAbstract Deep learning models improve retrieval.\nIntroduction\nIn this paper";
+        assertEquals("Deep learning models improve retrieval.", literatureService.extractAbstract(content));
+    }
+}
