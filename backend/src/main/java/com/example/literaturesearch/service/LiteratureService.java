@@ -2,6 +2,7 @@ package com.example.literaturesearch.service;
 
 import com.example.literaturesearch.dto.response.LiteratureResponse;
 import com.example.literaturesearch.entity.Literature;
+import com.example.literaturesearch.exception.BusinessException;
 import com.example.literaturesearch.exception.LiteratureNotFoundException;
 import com.example.literaturesearch.repository.LiteratureRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +34,8 @@ public class LiteratureService {
     private String uploadDir;
 
     @Transactional
-    public LiteratureResponse uploadLiterature(MultipartFile file, String title, String authors, 
-                                               String journal, Integer year, String doi) throws IOException {
+    public LiteratureResponse uploadLiterature(MultipartFile file, String title, String authors,
+                                               String journal, Integer year, String doi, Long userId) throws IOException {
         String originalFileName = file.getOriginalFilename();
         if (originalFileName == null || !originalFileName.toLowerCase().endsWith(".pdf")) {
             throw new IllegalArgumentException("只支持PDF格式文件");
@@ -72,6 +73,7 @@ public class LiteratureService {
                 .fileName(originalFileName)
                 .filePath(filePath.toString())
                 .content(content)
+                .userId(userId)
                 .build();
 
         Literature savedLiterature = literatureRepository.save(literature);
@@ -105,38 +107,47 @@ public class LiteratureService {
         return null;
     }
 
-    private String extractAbstract(String content) {
+    String extractAbstract(String content) {
         if (content == null || content.isEmpty()) {
             return null;
         }
-        
-        int abstractStart = content.toLowerCase().indexOf("abstract");
-        int keywordsStart = content.toLowerCase().indexOf("keywords");
-        int introductionStart = content.toLowerCase().indexOf("introduction");
-        
+
+        String lower = content.toLowerCase();
+        int abstractStart = lower.indexOf("abstract");
+        int markerLength = "abstract".length();
+
         if (abstractStart == -1) {
-            abstractStart = content.toLowerCase().indexOf("摘要");
+            abstractStart = content.indexOf("摘要");
+            markerLength = "摘要".length();
         }
-        
+
         if (abstractStart == -1) {
             return null;
         }
-        
-        int start = abstractStart + "abstract".length();
+
+        int start = abstractStart + markerLength;
         int end = content.length();
-        
+
+        int keywordsStart = lower.indexOf("keywords");
+        int introductionStart = lower.indexOf("introduction");
+
         if (keywordsStart > abstractStart) {
             end = Math.min(end, keywordsStart);
         }
         if (introductionStart > abstractStart) {
             end = Math.min(end, introductionStart);
         }
-        
+
         String abstractText = content.substring(start, end).trim();
+        // 去掉 "Abstract—xxx" / "摘要：xxx" 这类引导符
+        while (!abstractText.isEmpty() && "：:—–-".indexOf(abstractText.charAt(0)) >= 0) {
+            abstractText = abstractText.substring(1).trim();
+        }
+
         if (abstractText.length() > 3000) {
             abstractText = abstractText.substring(0, 3000);
         }
-        
+
         return abstractText;
     }
 
@@ -153,10 +164,15 @@ public class LiteratureService {
     }
 
     @Transactional
-    public void deleteLiterature(Long id) {
+    public void deleteLiterature(Long id, Long currentUserId) {
         Literature literature = literatureRepository.findById(id)
                 .orElseThrow(() -> new LiteratureNotFoundException(id));
-        
+
+        // 历史数据（user_id 为空）不做属主限制，新上传的文献仅上传者可删除
+        if (literature.getUserId() != null && !literature.getUserId().equals(currentUserId)) {
+            throw new BusinessException("只能删除自己上传的文献");
+        }
+
         try {
             Files.deleteIfExists(Paths.get(literature.getFilePath()));
         } catch (IOException e) {

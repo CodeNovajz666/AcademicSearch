@@ -358,6 +358,13 @@ button {
   flex-wrap: wrap;
   gap: 8px;
 }
+.cp-stats {
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+  user-select: none;
+}
 .cp-refs-label {
   width: 100%;
   font-size: 12px;
@@ -1242,6 +1249,82 @@ button {
 .auth-switch a:hover {
   opacity: 0.75;
 }
+.pwd-wrap {
+  position: relative;
+}
+.pwd-wrap input {
+  width: 100%;
+  padding-right: 44px;
+}
+.pwd-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.pwd-toggle:hover {
+  color: var(--text-primary);
+  background: var(--surface-2);
+}
+.auth-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  margin-top: -10px;
+}
+.auth-remember input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.field-hint {
+  margin-top: 7px;
+  font-size: 12.5px;
+  color: var(--danger);
+}
+.pwd-strength {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 9px;
+}
+.pwd-strength i {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  transition: background var(--dur) var(--ease);
+}
+.pwd-strength span {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+.pwd-strength.weak i:nth-child(-n + 1) {
+  background: var(--danger);
+}
+.pwd-strength.mid i:nth-child(-n + 2) {
+  background: #f5a623;
+}
+.pwd-strength.strong i:nth-child(-n + 3) {
+  background: #2fbf71;
+}
 
 /* ---------- 轻提示 ---------- */
 .toast-stack {
@@ -1288,6 +1371,254 @@ button {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ---------- Agent 执行轨迹 / 会话历史 ---------- */
+.copilot {
+  position: relative;
+}
+.copilot-head-text {
+  flex: 1;
+  min-width: 0;
+}
+.copilot-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.copilot-actions button {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease),
+    background var(--dur) var(--ease);
+}
+.copilot-actions button:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.cp-history {
+  position: absolute;
+  top: 88px;
+  right: 20px;
+  width: min(300px, calc(100% - 40px));
+  z-index: 30;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  box-shadow: var(--shadow-2);
+  padding: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  animation: cp-pop 0.22s var(--ease);
+}
+@keyframes cp-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+.cp-history-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 10px;
+}
+.cp-history-item:hover {
+  background: var(--surface-2);
+}
+.cp-history-item.active .cp-history-load span {
+  color: var(--accent);
+}
+.cp-history-load {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+}
+.cp-history-load span {
+  font-size: 13px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cp-history-load time {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.cp-history-ops {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+.cp-history-edit,
+.cp-history-del {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.cp-history-edit:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.cp-history-del:hover {
+  color: var(--danger);
+  background: rgba(229, 72, 77, 0.1);
+}
+.cp-rename-input {
+  flex: 1;
+  min-width: 0;
+  margin: 4px 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--surface-2);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  outline: none;
+}
+.cp-history-empty {
+  padding: 16px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
+.cp-trace {
+  margin-bottom: 8px;
+}
+.cp-trace-toggle {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  background: none;
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease);
+}
+.cp-trace-toggle:hover {
+  color: var(--accent);
+}
+.cp-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.cp-step {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  animation: cp-step-in 0.25s var(--ease);
+}
+@keyframes cp-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+.cp-step-ic {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--accent);
+}
+.cp-step-tool_call .cp-step-ic {
+  color: var(--text-tertiary);
+}
+.cp-step-tx {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.cp-answer {
+  font-size: 14.5px;
+  white-space: normal;
+}
+.cp-answer p {
+  margin: 4px 0;
+}
+.cp-answer h5 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 10px 0 4px;
+  color: var(--text-primary);
+}
+.cp-answer ul {
+  margin: 4px 0 8px;
+  padding-left: 20px;
+}
+.cp-answer li {
+  margin: 2px 0;
+}
+.cp-answer strong {
+  font-weight: 700;
+}
+.cp-answer code {
+  font-size: 12.5px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--text-primary);
+}
+.cp-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 15px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: cp-blink 1s steps(2) infinite;
+}
+@keyframes cp-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.copilot-send.stop {
+  background: var(--danger);
+}
+.copilot-send.stop:hover {
+  background: var(--danger);
+  opacity: 0.88;
 }
 
 /* ---------- 响应式 ---------- */

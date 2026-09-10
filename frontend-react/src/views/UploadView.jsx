@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { useToast } from '../context/ToastContext'
 
 const EMPTY_META = { title: '', authors: '', journal: '', year: '', doi: '' }
+const MAX_FILE_SIZE = 50 * 1024 * 1024
 
 export default function UploadView() {
   const [file, setFile] = useState(null)
@@ -19,6 +20,10 @@ export default function UploadView() {
     if (!f) return
     if (f.type !== 'application/pdf' || !f.name.toLowerCase().endsWith('.pdf')) {
       toast('仅支持 PDF 格式文件', 'error')
+      return
+    }
+    if (f.size > MAX_FILE_SIZE) {
+      toast('文件超过 50MB 上限，请压缩后重试', 'error')
       return
     }
     setFile(f)

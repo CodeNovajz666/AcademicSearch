@@ -1,19 +1,16 @@
 package com.example.literaturesearch.service;
 
+import com.example.literaturesearch.dto.response.LiteratureResponse;
 import com.example.literaturesearch.dto.response.SearchResult;
 import com.example.literaturesearch.entity.Literature;
-import com.example.literaturesearch.entity.VectorIndex;
 import com.example.literaturesearch.repository.LiteratureRepository;
-import com.example.literaturesearch.repository.VectorIndexRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -21,40 +18,24 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class VectorService {
 
-    private final VectorIndexRepository vectorIndexRepository;
+    private final MilvusVectorStore milvusVectorStore;
     private final LiteratureRepository literatureRepository;
     private final DashScopeService dashScopeService;
-    private final ObjectMapper objectMapper;
 
-    @Transactional
     public void createVectorIndex(Long literatureId, String content) {
         List<String> chunks = splitTextIntoChunks(content, 500, 100);
-        
-        for (int i = 0; i < chunks.size(); i++) {
-            String chunk = chunks.get(i);
-            List<Double> embedding = dashScopeService.getEmbedding(chunk);
-            
-            String vectorData;
-            try {
-                vectorData = objectMapper.writeValueAsString(embedding);
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Failed to serialize vector", e);
-            }
-
-            VectorIndex vectorIndex = VectorIndex.builder()
-                    .literatureId(literatureId)
-                    .vectorData(vectorData)
-                    .chunkText(chunk)
-                    .chunkIndex(i)
-                    .build();
-
-            vectorIndexRepository.save(vectorIndex);
+        if (chunks.isEmpty()) {
+            log.info("No chunks to index for literature {}", literatureId);
+            return;
         }
-        
+
+        List<List<Double>> embeddings = dashScopeService.getEmbeddings(chunks);
+        milvusVectorStore.insertChunks(literatureId, chunks, embeddings);
+
         log.info("Created {} vector indices for literature {}", chunks.size(), literatureId);
     }
 
-    private List<String> splitTextIntoChunks(String text, int chunkSize, int overlap) {
+    List<String> splitTextIntoChunks(String text, int chunkSize, int overlap) {
         List<String> chunks = new ArrayList<>();
         if (text == null || text.isEmpty()) {
             return chunks;
@@ -66,14 +47,10 @@ public class VectorService {
 
         while (start < text.length()) {
             String chunk = text.substring(start, end);
-            
-            if (end < text.length() && !chunk.endsWith("。") && !chunk.endsWith("！") && !chunk.endsWith("？") && !chunk.endsWith(";") && !chunk.endsWith("。")) {
-                int lastPeriod = chunk.lastIndexOf("。");
-                int lastQuestion = chunk.lastIndexOf("？");
-                int lastExclaim = chunk.lastIndexOf("！");
-                int lastSemicolon = chunk.lastIndexOf(";");
-                int lastBreak = Math.max(Math.max(lastPeriod, lastQuestion), Math.max(lastExclaim, lastSemicolon));
-                
+
+            if (end < text.length() && !endsWithSentenceBoundary(chunk)) {
+                int lastBreak = lastSentenceBoundary(chunk);
+
                 if (lastBreak > chunkSize / 2) {
                     end = start + lastBreak + 1;
                     chunk = text.substring(start, end);
@@ -81,7 +58,7 @@ public class VectorService {
             }
 
             chunks.add(chunk);
-            
+
             if (end >= text.length()) {
                 break;
             }
@@ -94,80 +71,62 @@ public class VectorService {
         return chunks;
     }
 
+    private static boolean endsWithSentenceBoundary(String chunk) {
+        return !chunk.isEmpty() && "。！？!?;；.".indexOf(chunk.charAt(chunk.length() - 1)) >= 0;
+    }
+
+    private static int lastSentenceBoundary(String chunk) {
+        int lastBreak = -1;
+        for (int i = 0; i < chunk.length(); i++) {
+            if ("。！？!?;；.".indexOf(chunk.charAt(i)) >= 0) {
+                lastBreak = i;
+            }
+        }
+        return lastBreak;
+    }
+
     public List<SearchResult> search(String query, int topK) {
         List<Double> queryVector = dashScopeService.getEmbedding(query);
-        
-        List<VectorIndex> allVectors = vectorIndexRepository.findAll();
-        if (allVectors.isEmpty()) {
-            return Collections.emptyList();
+
+        // Milvus HNSW 检索返回的是文本块级命中，按文献去重保留最高分块
+        Map<Long, MilvusVectorStore.SearchHit> bestByLiterature = new java.util.LinkedHashMap<>();
+        for (MilvusVectorStore.SearchHit hit : milvusVectorStore.search(queryVector, topK * 4)) {
+            bestByLiterature.merge(hit.literatureId(), hit,
+                    (a, b) -> b.score() > a.score() ? b : a);
         }
 
-        List<Map.Entry<VectorIndex, Double>> similarities = new ArrayList<>();
-        for (VectorIndex vectorIndex : allVectors) {
-            List<Double> vector = parseVector(vectorIndex.getVectorData());
-            double similarity = cosineSimilarity(queryVector, vector);
-            similarities.add(new AbstractMap.SimpleEntry<>(vectorIndex, similarity));
-        }
+        List<MilvusVectorStore.SearchHit> ranked = new ArrayList<>(bestByLiterature.values());
+        ranked.sort((a, b) -> Double.compare(b.score(), a.score()));
 
-        similarities.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
-        
-        int limit = Math.min(topK, similarities.size());
-        Set<Long> seenLiteratureIds = new HashSet<>();
         List<SearchResult> results = new ArrayList<>();
-
-        for (int i = 0; i < limit; i++) {
-            Map.Entry<VectorIndex, Double> entry = similarities.get(i);
-            VectorIndex vectorIndex = entry.getKey();
-            Double similarity = entry.getValue();
-
-            if (!seenLiteratureIds.contains(vectorIndex.getLiteratureId())) {
-                seenLiteratureIds.add(vectorIndex.getLiteratureId());
-                
-                Literature literature = literatureRepository.findById(vectorIndex.getLiteratureId())
-                        .orElse(null);
-                
-                if (literature != null) {
-                    SearchResult result = SearchResult.builder()
-                            .literature(com.example.literaturesearch.dto.response.LiteratureResponse.fromEntity(literature))
-                            .similarity(similarity)
-                            .snippet(truncateText(vectorIndex.getChunkText(), 100))
-                            .build();
-                    results.add(result);
-                }
+        for (MilvusVectorStore.SearchHit candidate : ranked) {
+            if (results.size() >= topK) {
+                break;
             }
+            Literature literature = literatureRepository.findById(candidate.literatureId())
+                    .orElse(null);
+            if (literature == null) {
+                continue;
+            }
+            results.add(SearchResult.builder()
+                    .literature(LiteratureResponse.fromEntity(literature))
+                    .similarity(candidate.score())
+                    .snippet(truncateText(candidate.chunkText(), 100))
+                    .build());
         }
 
         return results;
     }
 
-    private List<Double> parseVector(String vectorData) {
-        try {
-            return objectMapper.readValue(vectorData, new TypeReference<List<Double>>() {});
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to parse vector data", e);
-        }
+    public void deleteVectorsByLiteratureId(Long literatureId) {
+        milvusVectorStore.deleteByLiteratureId(literatureId);
     }
 
-    private double cosineSimilarity(List<Double> vec1, List<Double> vec2) {
-        if (vec1 == null || vec2 == null || vec1.size() != vec2.size()) {
-            return 0.0;
-        }
-
-        double dotProduct = 0.0;
-        double norm1 = 0.0;
-        double norm2 = 0.0;
-
-        for (int i = 0; i < vec1.size(); i++) {
-            dotProduct += vec1.get(i) * vec2.get(i);
-            norm1 += vec1.get(i) * vec1.get(i);
-            norm2 += vec2.get(i) * vec2.get(i);
-        }
-
-        if (norm1 == 0 || norm2 == 0) {
-            return 0.0;
-        }
-
-        return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
+    public String getContextForLiterature(List<Long> literatureIds) {
+        List<Literature> literatures = literatureRepository.findAllById(literatureIds);
+        return literatures.stream()
+                .map(l -> "标题: " + l.getTitle() + "\n摘要: " + (l.getAbstractText() != null ? l.getAbstractText() : "") + "\n内容: " + (l.getContent() != null ? l.getContent().substring(0, Math.min(1000, l.getContent().length())) : ""))
+                .collect(Collectors.joining("\n\n---\n\n"));
     }
 
     private String truncateText(String text, int maxLength) {
@@ -179,21 +138,5 @@ public class VectorService {
             return text;
         }
         return text.substring(0, maxLength) + "...";
-    }
-
-    public List<VectorIndex> getVectorsByLiteratureId(Long literatureId) {
-        return vectorIndexRepository.findByLiteratureId(literatureId);
-    }
-
-    @Transactional
-    public void deleteVectorsByLiteratureId(Long literatureId) {
-        vectorIndexRepository.deleteByLiteratureId(literatureId);
-    }
-
-    public String getContextForLiterature(List<Long> literatureIds) {
-        List<Literature> literatures = literatureRepository.findAllById(literatureIds);
-        return literatures.stream()
-                .map(l -> "标题: " + l.getTitle() + "\n摘要: " + (l.getAbstractText() != null ? l.getAbstractText() : "") + "\n内容: " + (l.getContent() != null ? l.getContent().substring(0, Math.min(1000, l.getContent().length())) : ""))
-                .collect(Collectors.joining("\n\n---\n\n"));
     }
 }

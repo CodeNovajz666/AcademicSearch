@@ -57,12 +57,22 @@ public class JwtUtil {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername(), expiration);
+        return createToken(claims, subjectOf(userDetails), expiration);
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername(), refreshExpiration);
+        return createToken(claims, subjectOf(userDetails), refreshExpiration);
+    }
+
+    /**
+     * token 主题统一使用 email：UserDetails.getUsername() 返回的是注册用户名，
+     * 而 JwtAuthenticationFilter 按邮箱查询用户，两者不一致会导致认证 403。
+     */
+    private static String subjectOf(UserDetails userDetails) {
+        return userDetails instanceof com.example.literaturesearch.entity.User user
+                ? user.getEmail()
+                : userDetails.getUsername();
     }
 
     private String createToken(Map<String, Object> claims, String subject, Long expirationTime) {
@@ -76,7 +86,7 @@ public class JwtUtil {
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {
-        final String email = extractEmail(token);
-        return (email.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        final String subject = extractEmail(token);
+        return (subject.equals(subjectOf(userDetails)) && !isTokenExpired(token));
     }
 }

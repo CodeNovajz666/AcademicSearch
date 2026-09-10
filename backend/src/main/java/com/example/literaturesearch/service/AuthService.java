@@ -91,10 +91,13 @@ public class AuthService {
             throw new BusinessException("用户未登录");
         }
 
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        User user = userRepository.findByEmail(userDetails.getUsername())
+        Object principal = authentication.getPrincipal();
+        // 过滤器注入的 principal 即 User 实体；getUsername() 是注册用户名而非邮箱，不能用于 findByEmail
+        if (principal instanceof User user) {
+            return UserResponse.fromEntity(user);
+        }
+        User user = userRepository.findByEmail(((UserDetails) principal).getUsername())
                 .orElseThrow(() -> new BusinessException("用户不存在"));
-
         return UserResponse.fromEntity(user);
     }
 }

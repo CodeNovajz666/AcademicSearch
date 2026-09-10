@@ -18,6 +18,8 @@ backend/src/main/resources/application-local.yml
 # 上传文件与运行时数据
 backend/uploads/
 uploads/
+agent-python/__pycache__
+agent-python/.pip-cache
 
 # IDE
 .idea/
@@ -27,3 +29,4 @@ uploads/
 # 系统
 .DS_Store
 Thumbs.db
+frontend-react/.npm-cache

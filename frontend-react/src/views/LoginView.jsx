@@ -1,14 +1,18 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, Loader2 } from 'lucide-react'
+import { BookOpen, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+
+const REMEMBER_KEY = 'as.remember-email'
 
 export default function LoginView() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => localStorage.getItem(REMEMBER_KEY) || '')
   const [password, setPassword] = useState('')
+  const [remember, setRemember] = useState(() => Boolean(localStorage.getItem(REMEMBER_KEY)))
+  const [showPwd, setShowPwd] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -17,8 +21,11 @@ export default function LoginView() {
     if (busy) return
     setBusy(true)
     setError('')
+    const trimmed = email.trim()
     try {
-      await login(email, password)
+      await login(trimmed, password)
+      if (remember) localStorage.setItem(REMEMBER_KEY, trimmed)
+      else localStorage.removeItem(REMEMBER_KEY)
       navigate(location.state?.from?.pathname || '/', { replace: true })
     } catch (ex) {
       setError(ex.message)
@@ -48,16 +55,35 @@ export default function LoginView() {
         </div>
         <div className="field">
           <label htmlFor="login-password">密码</label>
-          <input
-            id="login-password"
-            type="password"
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="输入密码"
-          />
+          <div className="pwd-wrap">
+            <input
+              id="login-password"
+              type={showPwd ? 'text' : 'password'}
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="输入密码"
+            />
+            <button
+              type="button"
+              className="pwd-toggle"
+              onClick={() => setShowPwd((v) => !v)}
+              aria-label={showPwd ? '隐藏密码' : '显示密码'}
+              title={showPwd ? '隐藏密码' : '显示密码'}
+            >
+              {showPwd ? <EyeOff size={16} strokeWidth={1.8} /> : <Eye size={16} strokeWidth={1.8} />}
+            </button>
+          </div>
         </div>
+        <label className="auth-remember">
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+          />
+          <span>记住邮箱</span>
+        </label>
         {error && <p className="form-error">{error}</p>}
         <button type="submit" className="btn-primary auth-submit" disabled={busy}>
           {busy ? <Loader2 size={17} className="spin" /> : '登录'}

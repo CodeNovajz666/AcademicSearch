@@ -5,10 +5,14 @@ spring:
   application:
     name: literature-search
 
+  # 支持从项目根目录或 backend 目录下的 .env 文件读取环境变量（.env 已被 .gitignore 忽略）
+  config:
+    import: optional:file:.env[.properties],optional:file:backend/.env[.properties]
+
   datasource:
     url: jdbc:mysql://localhost:3306/example_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
-    username: root
-    password: 123456
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -31,16 +35,27 @@ spring:
 
 aliyun:
   dashscope:
-    api-key: ***REMOVED_DASHSCOPE_KEY***
-    endpoint: https://dashscope.aliyuncs.com/api/text/embedding
-    chat-endpoint: https://dashscope.aliyuncs.com/api/text/chat
+    api-key: ${DASHSCOPE_API_KEY:}
+    # 官方文档端点，如使用业务空间（Workspace）部署，可改为
+    # https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api/v1/services/... 形式
+    endpoint: https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding
+    chat-endpoint: https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation
     model-name: text-embedding-v1
     chat-model-name: qwen-turbo
 
 jwt:
-  secret: ***REMOVED_OLD_JWT_SECRET***
+  secret: ${JWT_SECRET:***REMOVED_OLD_JWT_SECRET***}
   expiration: 86400000
   refresh-expiration: 604800000
+
+app:
+  cors:
+    # 允许的前端来源白名单，逗号分隔；生产环境部署时请替换为实际域名
+    allowed-origins: http://localhost:5173,http://localhost:4173
+
+milvus:
+  # 向量库地址（milvus/docker-compose.yml 启动的 standalone 实例）
+  uri: ${MILVUS_URI:http://localhost:19530}
 
 logging:
   level:
