@@ -20,6 +20,8 @@ backend/uploads/
 uploads/
 agent-python/__pycache__
 agent-python/.pip-cache
+agent-python/.venv/
+milvus/volumes/
 
 # IDE
 .idea/
