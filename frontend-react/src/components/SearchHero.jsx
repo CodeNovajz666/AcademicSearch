@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Search } from 'lucide-react'
 
+<<<<<<< HEAD
 /** 候选池：每次从 20 个热门研究方向中随机推送 3 个 */
 const SUGGESTIONS = [
   '大语言模型最新进展',
@@ -40,6 +41,12 @@ export default function SearchHero({ initialQuery = '', compact = false }) {
   const [q, setQ] = useState(initialQuery)
   // 惰性初始化：只在挂载时抽一次，输入重渲染不会重洗候选
   const [picks] = useState(() => sampleSuggestions(3))
+=======
+const SUGGESTIONS = ['大语言模型最新进展', '检索增强生成 RAG', '多模态学习']
+
+export default function SearchHero({ initialQuery = '', compact = false }) {
+  const [q, setQ] = useState(initialQuery)
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
   const navigate = useNavigate()
 
   const submit = (e) => {
@@ -54,7 +61,11 @@ export default function SearchHero({ initialQuery = '', compact = false }) {
         <>
           <p className="hero-eyebrow">Semantic Scholar</p>
           <h1 className="hero-title">
+<<<<<<< HEAD
             向文献库提问<span className="hero-dot"></span>
+=======
+            向文献库提问<span className="hero-dot">。</span>
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
           </h1>
           <p className="hero-sub">语义向量检索 × 检索增强生成，每个回答皆可溯源</p>
         </>
@@ -81,7 +92,11 @@ export default function SearchHero({ initialQuery = '', compact = false }) {
       </div>
       {!compact && (
         <div className="hero-chips">
+<<<<<<< HEAD
           {picks.map((s) => (
+=======
+          {SUGGESTIONS.map((s) => (
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
             <button key={s} type="button" onClick={() => setQ(s)}>
               {s}
             </button>

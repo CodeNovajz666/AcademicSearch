@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 
+<<<<<<< HEAD
 // 三种主题：深色（默认）→ 浅色 → 护眼（豆沙绿），循环切换
 export const THEMES = ['dark', 'light', 'eye']
 
@@ -25,6 +26,20 @@ export function ThemeProvider({ children }) {
   }, [theme])
 
   const toggle = () => setTheme((t) => THEMES[(THEMES.indexOf(t) + 1) % THEMES.length])
+=======
+const ThemeContext = createContext(null)
+
+export function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState(() => localStorage.getItem('as.theme') || 'dark')
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem('as.theme', theme)
+    window.dispatchEvent(new CustomEvent('theme:change'))
+  }, [theme])
+
+  const toggle = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
   return <ThemeContext.Provider value={{ theme, toggle }}>{children}</ThemeContext.Provider>
 }

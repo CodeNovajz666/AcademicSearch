@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+<<<<<<< HEAD
 import { ArrowRight, FileSearch, LogIn, Sparkles, UploadCloud, UserPlus } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+=======
+import { ArrowRight, FileSearch, UploadCloud } from 'lucide-react'
+import { api } from '../lib/api'
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 import SearchHero from '../components/SearchHero'
 import LiteratureCard from '../components/LiteratureCard'
 import SkeletonCard from '../components/SkeletonCard'
 import EmptyState from '../components/EmptyState'
 
 export default function HomeView() {
+<<<<<<< HEAD
   const { user } = useAuth()
   const [recent, setRecent] = useState(null)
   const [total, setTotal] = useState(0)
@@ -52,14 +58,35 @@ export default function HomeView() {
       </div>
     )
   }
+=======
+  const [recent, setRecent] = useState(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    api
+      .listLiterature()
+      .then((list) =>
+        setRecent(
+          [...list].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+        )
+      )
+      .catch((e) => setError(e.message))
+  }, [])
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
   return (
     <div className="page">
       <section className="home-hero">
         <SearchHero />
+<<<<<<< HEAD
         {recent && total > 0 && (
           <p className="home-stat">
             我的文献库已收录 {total} 篇 · 语义检索 · 检索增强问答
+=======
+        {recent && recent.length > 0 && (
+          <p className="home-stat">
+            已收录 {recent.length} 篇文献 · 语义检索 · 检索增强问答
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
           </p>
         )}
       </section>
@@ -77,6 +104,7 @@ export default function HomeView() {
         </section>
       )}
 
+<<<<<<< HEAD
       {/* 接口失败必须给出可见提示：静默留白会被误认为"文献库内容丢了" */}
       {recent === null && error && (
         <section className="home-recent">
@@ -87,6 +115,8 @@ export default function HomeView() {
         </section>
       )}
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
       {recent && recent.length > 0 && (
         <section className="home-recent">
           <header className="section-head">

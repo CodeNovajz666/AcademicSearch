@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """多 Agent 编排（Supervisor 模式）。
 
 协调者（Orchestrator）通过 Agent-as-Tool 派发三个专家子 Agent 协同工作：
@@ -10,6 +11,14 @@
 事件流与单 Agent 版完全兼容：start → step*(含子 Agent 步骤, agent 字段区分) → token* → final | error
 """
 import asyncio
+=======
+"""中心化编排器（Orchestrator-Centric）。
+
+单一 Orchestrator Agent 通过 MCP 协议调用全部工具，ReAct 循环 +
+finalize 收尾协议 + 流式最终回答。事件流与原 Java 版完全一致：
+start → step*(agent_start/thinking/tool_call/tool_result) → token* → final | error
+"""
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 import json
 import time
 from typing import Awaitable, Callable
@@ -18,6 +27,7 @@ import config
 import conversation_store
 import llm
 
+<<<<<<< HEAD
 SYSTEM_PROMPT = """你是一个学术文献研究中心的总协调者（Supervisor），通过工具完成用户的研究请求。
 
 ## 团队协作（复杂任务下放给专家）
@@ -153,11 +163,41 @@ def _brief_readable(lit: dict, user_id: int) -> bool:
     return lit.get("user_id") == user_id or public
 
 
+=======
+SYSTEM_PROMPT = """你是一个学术文献研究中心协调者（Orchestrator），通过 MCP 工具集完成用户的研究请求。
+
+## 工作流程
+1. 分析用户问题，规划需要收集的信息
+2. 按需调用工具收集信息：
+   - semantic_search：按语义检索文献（回答"有哪些关于X的文献"的首选）
+   - list_literatures：列出文献库清单（用户问"库里有什么"）
+   - get_literature：获取某篇文献的元数据与摘要
+   - read_section：精读文献正文片段（提取方法/实验/结论细节）
+   - translate：中英文互译
+   - summarize：对文献做结构化总结
+3. 信息足够后调用 finalize 结束研究阶段
+
+## 规则
+- 每轮必须调用一个工具（不允许只输出文本不调工具）
+- 最多 {max_steps} 步，注意控制节奏，避免重复调用相同工具
+- 多轮对话中注意结合上下文理解指代（如"第二篇"指上文列表中的第二篇）
+- 若工具返回错误或空结果，尝试换关键词或换工具，不要放弃
+
+## 回答要求（finalize 之后）
+- 用中文回答，结构清晰（必要时用小标题/列表）
+- 回答中的事实必须来自工具返回的真实文献内容，禁止编造
+- 引用文献时标注来源（标题/作者/年份）"""
+
+
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 class RunStats:
     def __init__(self):
         self.steps = 0
         self.tool_calls = 0
+<<<<<<< HEAD
         self.agents = ["orchestrator"]
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         self.duration_ms = 0
         self.usage = None
 
@@ -172,15 +212,21 @@ class RunStats:
             b = usage.get(key) or 0
             self.usage[key] = a + b
 
+<<<<<<< HEAD
     def touch_agent(self, name):
         if name not in self.agents:
             self.agents.append(name)
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     def to_dict(self):
         result = {
             "steps": self.steps,
             "toolCalls": self.tool_calls,
+<<<<<<< HEAD
             "agents": self.agents,
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
             "durationMs": self.duration_ms,
         }
         if self.usage:
@@ -196,11 +242,16 @@ class RunStats:
 
 class Orchestrator:
     """call_tool: MCP 工具调用注入（name, args_dict) -> str；
+<<<<<<< HEAD
     atomic_tool_schemas: MCP 发现的原子工具（OpenAI function calling 格式）。"""
+=======
+    tool_schemas: OpenAI function calling 格式的工具定义列表。"""
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
     def __init__(
         self,
         call_tool: Callable[[str, dict], Awaitable[str]],
+<<<<<<< HEAD
         atomic_tool_schemas: list[dict],
         api_key: str | None = None,
         orchestrator_model: str | None = None,
@@ -214,6 +265,12 @@ class Orchestrator:
         self.subagent_model = subagent_model or config.SUBAGENT_MODEL
         # 协调者可见：全部原子工具 + 派发工具
         self.supervisor_tools = atomic_tool_schemas + DISPATCH_TOOLS
+=======
+        tool_schemas: list[dict],
+    ):
+        self.call_tool = call_tool
+        self.tool_schemas = tool_schemas
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
     async def run(
         self,
@@ -221,6 +278,7 @@ class Orchestrator:
         conversation_id,
         question: str,
         emit,
+<<<<<<< HEAD
         literature_id=None,
     ) -> None:
         """执行一次完整研究任务。emit(event, data) 为 SSE 事件发射器。
@@ -301,6 +359,51 @@ class Orchestrator:
             message_id = await asyncio.to_thread(
                 conversation_store.save_assistant_message,
                 conversation_id, answer, events, references, stats.to_dict(),
+=======
+    ) -> None:
+        """执行一次完整研究任务。emit(event, data) 为 SSE 事件发射器。"""
+        start_ms = time.time()
+        conversation = conversation_store.get_or_create(
+            user_id, conversation_id, question
+        )
+        conversation_id = conversation["id"]
+        emit("start", {"conversationId": conversation_id})
+
+        events = []
+        references = []
+        stats = RunStats()
+
+        def record_step(event_data):
+            events.append(event_data)
+            emit("step", event_data)
+
+        record_step(
+            {
+                "agent": "orchestrator",
+                "stepIndex": 0,
+                "type": "agent_start",
+                "toolName": None,
+                "summary": f"开始规划：{question}",
+                "durationMs": None,
+            }
+        )
+
+        system_prompt = SYSTEM_PROMPT.format(max_steps=config.ORCHESTRATOR_MAX_STEPS)
+        messages = conversation_store.history_messages(conversation_id)
+        messages.append({"role": "user", "content": question})
+
+        try:
+            answer = await self._loop(
+                system_prompt, messages, record_step, references, stats, emit
+            )
+            stats.duration_ms = int((time.time() - start_ms) * 1000)
+            stats.steps = len(events)
+            stats.tool_calls = sum(
+                1 for e in events if e.get("type") == "tool_call"
+            )
+            message_id = conversation_store.save_turn(
+                conversation_id, question, answer, events, references, stats.to_dict()
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
             )
             emit(
                 "final",
@@ -311,6 +414,7 @@ class Orchestrator:
                     "stats": stats.to_dict(),
                 },
             )
+<<<<<<< HEAD
         except asyncio.CancelledError:
             # 客户端断开：用户消息已落库，直接终止，不补写轨迹
             raise
@@ -529,6 +633,36 @@ class Orchestrator:
             if not tool_calls:
                 # 模型未调工具直接输出：视为收敛，流式补发
                 return await self._final_answer(system_prompt, messages, emit, stats, record_step, step_index)
+=======
+        except Exception as e:  # noqa: BLE001 - SSE 顶层兜底
+            stats.duration_ms = int((time.time() - start_ms) * 1000)
+            emit("error", {"message": f"Agent 执行失败：{e}"})
+
+    async def _loop(self, system_prompt, messages, record_step, references, stats, emit):
+        for step_index in range(config.ORCHESTRATOR_MAX_STEPS):
+            content, tool_calls, usage = await llm.chat_with_tools(
+                config.ORCHESTRATOR_MODEL, system_prompt, messages, self.tool_schemas
+            )
+            stats.add_usage(usage)
+
+            if content and content.strip():
+                record_step(
+                    {
+                        "agent": "orchestrator",
+                        "stepIndex": step_index,
+                        "type": "thinking",
+                        "toolName": None,
+                        "summary": content.strip()[:200],
+                        "durationMs": None,
+                    }
+                )
+
+            if not tool_calls:
+                # 模型未调工具直接输出：视为收敛，流式补发
+                return await self._final_answer(
+                    system_prompt, messages, emit, stats, record_step, step_index
+                )
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
             messages.append(
                 {
@@ -538,7 +672,14 @@ class Orchestrator:
                         {
                             "id": tc["id"],
                             "type": "function",
+<<<<<<< HEAD
                             "function": {"name": tc["name"], "arguments": tc["arguments"]},
+=======
+                            "function": {
+                                "name": tc["name"],
+                                "arguments": tc["arguments"],
+                            },
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
                         }
                         for tc in tool_calls
                     ],
@@ -550,6 +691,7 @@ class Orchestrator:
                 name = tc["name"]
                 if name == "finalize":
                     finalized = True
+<<<<<<< HEAD
                     # OpenAI 兼容接口要求 assistant.tool_calls 的每次调用都有对应的 tool 响应消息，
                     # 缺失时下一轮（流式收尾）请求可能被 400 拒绝，这里补齐合法消息序列
                     messages.append(
@@ -562,11 +704,14 @@ class Orchestrator:
                             ),
                         }
                     )
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
                     continue
                 try:
                     args = json.loads(tc["arguments"]) if tc["arguments"] else {}
                 except json.JSONDecodeError:
                     args = {}
+<<<<<<< HEAD
 
                 if name in DISPATCH_TARGET:
                     record_step(
@@ -605,6 +750,49 @@ class Orchestrator:
 
             if finalized:
                 return await self._final_answer(system_prompt, messages, emit, stats, record_step, step_index)
+=======
+                record_step(
+                    {
+                        "agent": "orchestrator",
+                        "stepIndex": step_index,
+                        "type": "tool_call",
+                        "toolName": name,
+                        "summary": None,
+                        "durationMs": None,
+                    }
+                )
+                tool_start = time.time()
+                try:
+                    result = await self.call_tool(name, args)
+                except Exception as e:  # noqa: BLE001 - 工具失败降级为错误文本
+                    result = json.dumps(
+                        {"error": f"工具执行失败：{e}"}, ensure_ascii=False
+                    )
+                duration_ms = int((time.time() - tool_start) * 1000)
+                self._collect_reference(name, result, references)
+                record_step(
+                    {
+                        "agent": "orchestrator",
+                        "stepIndex": step_index,
+                        "type": "tool_result",
+                        "toolName": name,
+                        "summary": None,
+                        "durationMs": duration_ms,
+                    }
+                )
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tc["id"],
+                        "content": result,
+                    }
+                )
+
+            if finalized:
+                return await self._final_answer(
+                    system_prompt, messages, emit, stats, record_step, step_index
+                )
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
         # 步数耗尽：强制收敛
         return await self._final_answer(
@@ -615,6 +803,10 @@ class Orchestrator:
         record_step(
             {
                 "agent": "orchestrator",
+<<<<<<< HEAD
+=======
+                "stepIndex": step_index,
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
                 "type": "thinking",
                 "toolName": "finalize",
                 "summary": "信息收集完成，生成最终回答",
@@ -624,7 +816,11 @@ class Orchestrator:
         messages.append(
             {
                 "role": "user",
+<<<<<<< HEAD
                 "content": "信息收集阶段已结束。请基于以上所有已收集的信息（含各专家报告），直接给出面向用户的完整最终回答。",
+=======
+                "content": "信息收集阶段已结束。请基于以上所有已收集的信息，直接给出面向用户的完整最终回答。",
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
             }
         )
 
@@ -632,12 +828,17 @@ class Orchestrator:
             emit("token", {"content": token})
 
         answer, usage = await llm.chat_stream(
+<<<<<<< HEAD
             self.orchestrator_model, system_prompt, messages, on_token, api_key=self.api_key
+=======
+            config.ORCHESTRATOR_MODEL, system_prompt, messages, on_token
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         )
         stats.add_usage(usage)
         return answer or "（未生成回答）"
 
     @staticmethod
+<<<<<<< HEAD
     def _collect_reference(tool_name, args, result, references):
         """从工具结果与入参提取参考文献（按 id 去重，标题后到先补）。
 
@@ -683,3 +884,19 @@ class Orchestrator:
                     r["title"] = title
                 return
         references.append({"id": ref_id, "title": title})
+=======
+    def _collect_reference(tool_name, result, references):
+        """从 semantic_search 结果提取参考文献列表（去重）。"""
+        if tool_name != "semantic_search":
+            return
+        try:
+            data = json.loads(result)
+        except (json.JSONDecodeError, TypeError):
+            return
+        for item in data.get("results", []):
+            ref = {"id": item.get("literatureId"), "title": item.get("title")}
+            if ref["id"] is not None and not any(
+                r["id"] == ref["id"] for r in references
+            ):
+                references.append(ref)
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4

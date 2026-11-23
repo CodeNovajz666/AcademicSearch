@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { BookOpen, Eye, EyeOff, Loader2, RefreshCw } from 'lucide-react'
@@ -8,6 +9,16 @@ import { safeFromTarget } from '../lib/navigation'
 function pwdScore(pwd) {
   let score = 0
   if (pwd.length >= 8) score++ // 与提交校验同口径（<8 直接拦截）
+=======
+import { useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { BookOpen, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+
+function pwdScore(pwd) {
+  let score = 0
+  if (pwd.length >= 6) score++
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
   if (pwd.length >= 10) score++
   if (/[a-zA-Z]/.test(pwd) && /\d/.test(pwd)) score++
   if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++
@@ -21,7 +32,10 @@ const STRENGTH_CLASS = ['', 'weak', 'mid', 'strong']
 export default function RegisterView() {
   const { register } = useAuth()
   const navigate = useNavigate()
+<<<<<<< HEAD
   const location = useLocation()
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -29,13 +43,17 @@ export default function RegisterView() {
   const [showPwd, setShowPwd] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+<<<<<<< HEAD
   const [captcha, setCaptcha] = useState(null)
   const [captchaCode, setCaptchaCode] = useState('')
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
   const strength = useMemo(() => pwdScore(password), [password])
   const usernameInvalid = username.length > 0 && (username.trim().length < 2 || username.length > 30)
   const confirmInvalid = confirm.length > 0 && confirm !== password
 
+<<<<<<< HEAD
   const loadCaptcha = useCallback(async () => {
     try {
       setCaptcha(await api.getCaptcha())
@@ -49,6 +67,8 @@ export default function RegisterView() {
     loadCaptcha()
   }, [loadCaptcha])
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
   const submit = async (e) => {
     e.preventDefault()
     if (busy) return
@@ -56,14 +76,20 @@ export default function RegisterView() {
       setError('用户名需为 2~30 个字符')
       return
     }
+<<<<<<< HEAD
     if (password.length < 8) {
       setError('密码至少需要 8 位')
+=======
+    if (password.length < 6) {
+      setError('密码至少需要 6 位')
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
       return
     }
     if (password !== confirm) {
       setError('两次输入的密码不一致')
       return
     }
+<<<<<<< HEAD
     if (!captcha || !captchaCode.trim()) {
       setError('请输入图形验证码')
       return
@@ -84,6 +110,15 @@ export default function RegisterView() {
       setError(ex.message)
       // 验证码一次性且连错作废，任何注册失败后都重新取一张
       loadCaptcha()
+=======
+    setBusy(true)
+    setError('')
+    try {
+      await register({ email, username: username.trim(), password })
+      navigate('/', { replace: true })
+    } catch (ex) {
+      setError(ex.message)
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
       setBusy(false)
     }
   }
@@ -130,7 +165,11 @@ export default function RegisterView() {
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+<<<<<<< HEAD
               placeholder="至少 8 位，建议字母 + 数字"
+=======
+              placeholder="至少 6 位，建议字母 + 数字"
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
             />
             <button
               type="button"
@@ -164,6 +203,7 @@ export default function RegisterView() {
           />
           {confirmInvalid && <p className="field-hint">两次输入的密码不一致</p>}
         </div>
+<<<<<<< HEAD
         <div className="field">
           <label htmlFor="reg-captcha">图形验证码</label>
           <div className="captcha-row">
@@ -198,6 +238,8 @@ export default function RegisterView() {
             )}
           </div>
         </div>
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         {error && <p className="form-error">{error}</p>}
         <button type="submit" className="btn-primary auth-submit" disabled={busy}>
           {busy ? <Loader2 size={17} className="spin" /> : '注册'}

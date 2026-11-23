@@ -26,8 +26,12 @@ public class Literature {
     @Column(name = "authors", length = 1000)
     private String authors;
 
+<<<<<<< HEAD
     // MEDIUMTEXT：取消摘要字数限制后，TEXT 的 64KB 字节上限可能不够
     @Column(name = "abstract_text", columnDefinition = "MEDIUMTEXT")
+=======
+    @Column(name = "abstract_text", columnDefinition = "TEXT")
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     private String abstractText;
 
     @Column(name = "journal", length = 200)
@@ -48,6 +52,7 @@ public class Literature {
     @Column(name = "content", columnDefinition = "LONGTEXT")
     private String content;
 
+<<<<<<< HEAD
     /** 后台处理状态：PROCESSING / READY / FAILED（历史数据为 NULL，视为 READY） */
     @Column(name = "process_status", length = 20)
     private String processStatus;
@@ -82,6 +87,11 @@ public class Literature {
     @Column(name = "category", length = 50)
     private String category;
 
+=======
+    @Column(name = "user_id")
+    private Long userId;
+
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

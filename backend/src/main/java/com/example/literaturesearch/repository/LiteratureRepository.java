@@ -1,6 +1,7 @@
 package com.example.literaturesearch.repository;
 
 import com.example.literaturesearch.entity.Literature;
+<<<<<<< HEAD
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,12 +12,18 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+=======
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 import java.util.List;
 
 @Repository
 public interface LiteratureRepository extends JpaRepository<Literature, Long> {
     List<Literature> findByTitleContaining(String title);
     List<Literature> findByAuthorsContaining(String author);
+<<<<<<< HEAD
     List<Literature> findByUserId(Long userId);
     Page<Literature> findByUserId(Long userId, Pageable pageable);
     /** 历史数据 is_public 为 NULL 视为公开（该字段引入前文献就是共享的） */
@@ -59,4 +66,6 @@ public interface LiteratureRepository extends JpaRepository<Literature, Long> {
     @Query("UPDATE Literature l SET l.category = :category WHERE l.id = :id AND l.category IS NULL")
     @Transactional
     int backfillCategory(@Param("id") Long id, @Param("category") String category);
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 }

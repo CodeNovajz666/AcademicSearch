@@ -20,6 +20,7 @@ public class VectorService {
 
     private final MilvusVectorStore milvusVectorStore;
     private final LiteratureRepository literatureRepository;
+<<<<<<< HEAD
     private final com.example.literaturesearch.repository.UserRepository userRepository;
     private final DashScopeService dashScopeService;
 
@@ -27,10 +28,19 @@ public class VectorService {
         List<String> chunks = splitTextIntoChunks(content, 500, 100);
         if (chunks.isEmpty()) {
             log.info("No chunks to index for literature {}", literature.getId());
+=======
+    private final DashScopeService dashScopeService;
+
+    public void createVectorIndex(Long literatureId, String content) {
+        List<String> chunks = splitTextIntoChunks(content, 500, 100);
+        if (chunks.isEmpty()) {
+            log.info("No chunks to index for literature {}", literatureId);
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
             return;
         }
 
         List<List<Double>> embeddings = dashScopeService.getEmbeddings(chunks);
+<<<<<<< HEAD
         // 插入时带上属主/可见性标量（v2 schema）：Milvus 内直接过滤，无需拼长 id 列表
         milvusVectorStore.insertChunks(literature.getId(), chunks, embeddings,
                 literature.getUserId(), LiteratureService.isPubliclyVisible(literature));
@@ -41,6 +51,11 @@ public class VectorService {
     /** 可见性变更后同步 Milvus 标量字段（不重新 embedding；v1 collection 或未建索引时为空操作）。 */
     public void syncVisibility(Long literatureId, Long userId, boolean isPublic) {
         milvusVectorStore.syncVisibility(literatureId, userId, isPublic);
+=======
+        milvusVectorStore.insertChunks(literatureId, chunks, embeddings);
+
+        log.info("Created {} vector indices for literature {}", chunks.size(), literatureId);
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     }
 
     List<String> splitTextIntoChunks(String text, int chunkSize, int overlap) {
@@ -93,6 +108,7 @@ public class VectorService {
         return lastBreak;
     }
 
+<<<<<<< HEAD
     /**
      * 检索 + RAG 上下文一体化的结果：results 为去重后的 topK 文献，
      * context 由每篇文献命中分数最高的分块（而非正文开头）拼成，
@@ -163,6 +179,22 @@ public class VectorService {
 
         List<SearchResult> results = new ArrayList<>();
         Map<Long, Literature> contextLiteratures = new java.util.LinkedHashMap<>();
+=======
+    public List<SearchResult> search(String query, int topK) {
+        List<Double> queryVector = dashScopeService.getEmbedding(query);
+
+        // Milvus HNSW 检索返回的是文本块级命中，按文献去重保留最高分块
+        Map<Long, MilvusVectorStore.SearchHit> bestByLiterature = new java.util.LinkedHashMap<>();
+        for (MilvusVectorStore.SearchHit hit : milvusVectorStore.search(queryVector, topK * 4)) {
+            bestByLiterature.merge(hit.literatureId(), hit,
+                    (a, b) -> b.score() > a.score() ? b : a);
+        }
+
+        List<MilvusVectorStore.SearchHit> ranked = new ArrayList<>(bestByLiterature.values());
+        ranked.sort((a, b) -> Double.compare(b.score(), a.score()));
+
+        List<SearchResult> results = new ArrayList<>();
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         for (MilvusVectorStore.SearchHit candidate : ranked) {
             if (results.size() >= topK) {
                 break;
@@ -177,6 +209,7 @@ public class VectorService {
                     .similarity(candidate.score())
                     .snippet(truncateText(candidate.chunkText(), 100))
                     .build());
+<<<<<<< HEAD
             contextLiteratures.put(literature.getId(), literature);
         }
 
@@ -230,14 +263,27 @@ public class VectorService {
             }
         }
         return context.toString();
+=======
+        }
+
+        return results;
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     }
 
     public void deleteVectorsByLiteratureId(Long literatureId) {
         milvusVectorStore.deleteByLiteratureId(literatureId);
     }
 
+<<<<<<< HEAD
     public long countByLiteratureId(Long literatureId) {
         return milvusVectorStore.countByLiteratureId(literatureId);
+=======
+    public String getContextForLiterature(List<Long> literatureIds) {
+        List<Literature> literatures = literatureRepository.findAllById(literatureIds);
+        return literatures.stream()
+                .map(l -> "标题: " + l.getTitle() + "\n摘要: " + (l.getAbstractText() != null ? l.getAbstractText() : "") + "\n内容: " + (l.getContent() != null ? l.getContent().substring(0, Math.min(1000, l.getContent().length())) : ""))
+                .collect(Collectors.joining("\n\n---\n\n"));
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     }
 
     private String truncateText(String text, int maxLength) {

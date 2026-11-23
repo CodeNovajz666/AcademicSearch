@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { BookOpen, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+<<<<<<< HEAD
 import { safeFromTarget } from '../lib/navigation'
 
 const REMEMBER_KEY = 'as.remember-email'
@@ -14,13 +15,24 @@ function readRememberedEmail() {
   }
 }
 
+=======
+
+const REMEMBER_KEY = 'as.remember-email'
+
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 export default function LoginView() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+<<<<<<< HEAD
   const [email, setEmail] = useState(readRememberedEmail)
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(() => Boolean(readRememberedEmail()))
+=======
+  const [email, setEmail] = useState(() => localStorage.getItem(REMEMBER_KEY) || '')
+  const [password, setPassword] = useState('')
+  const [remember, setRemember] = useState(() => Boolean(localStorage.getItem(REMEMBER_KEY)))
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
   const [showPwd, setShowPwd] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -33,11 +45,17 @@ export default function LoginView() {
     const trimmed = email.trim()
     try {
       await login(trimmed, password)
+<<<<<<< HEAD
       try {
         if (remember) localStorage.setItem(REMEMBER_KEY, trimmed)
         else localStorage.removeItem(REMEMBER_KEY)
       } catch { /* 存储不可用时仅影响"记住邮箱" */ }
       navigate(safeFromTarget(location.state?.from) || '/', { replace: true })
+=======
+      if (remember) localStorage.setItem(REMEMBER_KEY, trimmed)
+      else localStorage.removeItem(REMEMBER_KEY)
+      navigate(location.state?.from?.pathname || '/', { replace: true })
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     } catch (ex) {
       setError(ex.message)
       setBusy(false)
@@ -101,8 +119,12 @@ export default function LoginView() {
         </button>
         <p className="auth-switch">
           还没有账号？
+<<<<<<< HEAD
           {/* 带上回跳 state：从功能页被引导到登录的游客，注册完成后回到原页面 */}
           <Link to="/register" state={location.state}>注册</Link>
+=======
+          <Link to="/register">注册</Link>
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         </p>
       </form>
     </div>

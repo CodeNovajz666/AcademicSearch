@@ -4,6 +4,7 @@ import com.example.literaturesearch.dto.request.LoginRequest;
 import com.example.literaturesearch.dto.request.RegisterRequest;
 import com.example.literaturesearch.dto.response.LoginResponse;
 import com.example.literaturesearch.dto.response.UserResponse;
+<<<<<<< HEAD
 import com.example.literaturesearch.entity.RevokedToken;
 import com.example.literaturesearch.entity.User;
 import com.example.literaturesearch.exception.BusinessException;
@@ -12,6 +13,12 @@ import com.example.literaturesearch.repository.RevokedTokenRepository;
 import com.example.literaturesearch.repository.UserRepository;
 import com.example.literaturesearch.util.JwtUtil;
 import io.jsonwebtoken.JwtException;
+=======
+import com.example.literaturesearch.entity.User;
+import com.example.literaturesearch.exception.BusinessException;
+import com.example.literaturesearch.repository.UserRepository;
+import com.example.literaturesearch.util.JwtUtil;
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,10 +27,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+<<<<<<< HEAD
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Date;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
 @Service
 @RequiredArgsConstructor
@@ -33,8 +43,11 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+<<<<<<< HEAD
     private final LoginRateLimiter loginRateLimiter;
     private final RevokedTokenRepository revokedTokenRepository;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
     public UserResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -51,6 +64,7 @@ public class AuthService {
         return UserResponse.fromEntity(savedUser);
     }
 
+<<<<<<< HEAD
     public LoginResponse login(LoginRequest request, String clientIp) {
         loginRateLimiter.assertNotLocked(request.getEmail(), clientIp);
         try {
@@ -77,6 +91,27 @@ public class AuthService {
             loginRateLimiter.recordFailure(request.getEmail(), clientIp);
             throw e;
         }
+=======
+    public LoginResponse login(LoginRequest request) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                )
+        );
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new BusinessException("用户不存在"));
+
+        String accessToken = jwtUtil.generateToken(user);
+        String refreshToken = jwtUtil.generateRefreshToken(user);
+
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .user(UserResponse.fromEntity(user))
+                .build();
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     }
 
     public LoginResponse refreshToken(String refreshToken) {
@@ -88,6 +123,7 @@ public class AuthService {
             if (!jwtUtil.validateToken(refreshToken, user)) {
                 throw new BusinessException("无效的刷新令牌");
             }
+<<<<<<< HEAD
             // access 令牌不能当刷新令牌用（历史 refresh 无 type claim，仍接受以兼容存量登录态）
             if (jwtUtil.TYPE_ACCESS.equals(jwtUtil.extractType(refreshToken))) {
                 throw new BusinessException("无效的刷新令牌");
@@ -97,6 +133,8 @@ public class AuthService {
             if (jti != null && revokedTokenRepository.existsById(jti)) {
                 throw new BusinessException("登录状态已失效，请重新登录");
             }
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
             String newAccessToken = jwtUtil.generateToken(user);
             String newRefreshToken = jwtUtil.generateRefreshToken(user);
@@ -111,6 +149,7 @@ public class AuthService {
         }
     }
 
+<<<<<<< HEAD
     /**
      * 登出：吊销 refresh 令牌（jti 黑名单），被盗令牌在登出后立即失效。
      * 幂等：无令牌/无效令牌/历史无 jti 令牌均静默通过。
@@ -142,6 +181,12 @@ public class AuthService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new UnauthorizedException("用户未登录");
+=======
+    public UserResponse getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException("用户未登录");
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         }
 
         Object principal = authentication.getPrincipal();
@@ -149,6 +194,7 @@ public class AuthService {
         if (principal instanceof User user) {
             return UserResponse.fromEntity(user);
         }
+<<<<<<< HEAD
         if (principal instanceof UserDetails userDetails) {
             User user = userRepository.findByEmail(userDetails.getUsername()).orElse(null);
             if (user != null) {
@@ -157,5 +203,10 @@ public class AuthService {
         }
         // 匿名请求（无 Authorization 头）：principal 是 "anonymousUser" 字符串，规范返回 401
         throw new UnauthorizedException("用户未登录");
+=======
+        User user = userRepository.findByEmail(((UserDetails) principal).getUsername())
+                .orElseThrow(() -> new BusinessException("用户不存在"));
+        return UserResponse.fromEntity(user);
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     }
 }

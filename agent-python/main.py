@@ -13,7 +13,10 @@ import contextlib
 import json
 import os
 import sys
+<<<<<<< HEAD
 import traceback
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -73,6 +76,7 @@ async def _start_mcp():
 
 
 async def _stop_mcp():
+<<<<<<< HEAD
     global mcp_session, mcp_exit_stack, tool_schemas
     if mcp_exit_stack:
         try:
@@ -98,10 +102,18 @@ async def ensure_mcp() -> ClientSession:
             await _stop_mcp()
             await _start_mcp()
     return mcp_session
+=======
+    global mcp_session, mcp_exit_stack
+    if mcp_exit_stack:
+        await mcp_exit_stack.aclose()
+    mcp_session = None
+    mcp_exit_stack = None
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+<<<<<<< HEAD
     if not config.JWT_SECRET or len(config.JWT_SECRET.encode("utf-8")) < 32:
         raise RuntimeError(
             "JWT_SECRET 未配置或不足 32 字节：请检查项目根目录 .env（参考 .env.example）。"
@@ -112,6 +124,8 @@ async def lifespan(app: FastAPI):
         await asyncio.to_thread(db.ensure_schema)
     except Exception as e:  # noqa: BLE001 - DB 暂不可用时保持可启动，失败留待请求期暴露
         print(f"[DB] 会话表初始化失败（若表已存在可忽略）: {e}")
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     await _start_mcp()
     yield
     await _stop_mcp()
@@ -137,6 +151,7 @@ def current_user_id(request: Request) -> int:
         raise ValueError("未登录")
     token = auth[7:]
     try:
+<<<<<<< HEAD
         # Java 端 jjwt 的 signWith(SecretKey) 按密钥长度自动选 HMAC 算法
         # （密钥 ≥64 字节即签 HS512），这里必须接受 HMAC 全族而非只认 HS256，
         # 否则 Java 签发的所有令牌都会在 Python 侧验签失败（表现为 AI 副驾 401）
@@ -146,6 +161,11 @@ def current_user_id(request: Request) -> int:
     # refresh 令牌只用于刷新换新，不能当访问令牌（与 Java 过滤器同一规则）
     if payload.get("type") == "refresh":
         raise ValueError("无效的访问令牌")
+=======
+        payload = jwt.decode(token, config.JWT_SECRET, algorithms=["HS256"])
+    except jwt.PyJWTError as e:
+        raise ValueError("登录已过期") from e
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     email = payload.get("sub")
     if not email:
         raise ValueError("登录已过期")
@@ -159,6 +179,7 @@ def auth_error_response(e: ValueError):
     return JSONResponse({"code": 401, "message": str(e), "data": None}, status_code=401)
 
 
+<<<<<<< HEAD
 def _conversation_dto(row: dict) -> dict:
     """会话对外字段统一 camelCase（与原 Java 版一致，前端读 createdAt/updatedAt）。"""
     return {
@@ -169,11 +190,14 @@ def _conversation_dto(row: dict) -> dict:
     }
 
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 @app.get("/health")
 async def health():
     return {"status": "ok", "mcp": mcp_session is not None}
 
 
+<<<<<<< HEAD
 async def _user_llm_options(user_id: int) -> dict:
     """读取用户自备 Key 与模型覆盖；模型等配置缺失时回退服务器默认。"""
     try:
@@ -243,6 +267,17 @@ async def agent_chat(request: Request):
             return JSONResponse(
                 {"code": 400, "message": "literatureId 必须是整数", "data": None}, status_code=400
             )
+=======
+@app.post("/agent/chat")
+async def agent_chat(request: Request):
+    try:
+        user_id = current_user_id(request)
+    except ValueError as e:
+        return auth_error_response(e)
+    body = await request.json()
+    question = (body.get("question") or "").strip()
+    conversation_id = body.get("conversationId")
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     if not question:
         return JSONResponse({"code": 400, "message": "问题不能为空", "data": None}, status_code=400)
 
@@ -253,6 +288,7 @@ async def agent_chat(request: Request):
             queue.put_nowait((event, data))
 
         async def run_agent():
+<<<<<<< HEAD
             try:
                 from orchestrator import Orchestrator
 
@@ -288,6 +324,22 @@ async def agent_chat(request: Request):
                 emit("error", {"message": "Agent 服务内部异常，请稍后重试"})
             finally:
                 queue.put_nowait((None, None))
+=======
+            from orchestrator import Orchestrator
+
+            async def call_tool(name, args):
+                if mcp_session is None:
+                    return json.dumps({"error": "MCP 未连接"}, ensure_ascii=False)
+                result = await mcp_session.call_tool(name, arguments=args)
+                texts = [
+                    c.text for c in (result.content or []) if hasattr(c, "text")
+                ]
+                return "\n".join(texts)
+
+            orchestrator = Orchestrator(call_tool, tool_schemas)
+            await orchestrator.run(user_id, conversation_id, question, emit)
+            queue.put_nowait((None, None))
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
         task = asyncio.create_task(run_agent())
         try:
@@ -315,19 +367,31 @@ async def agent_chat(request: Request):
 @app.get("/agent/conversations")
 async def list_conversations(request: Request):
     try:
+<<<<<<< HEAD
         # pymysql 同步调用下沉线程池，避免阻塞事件循环
         user_id = await asyncio.to_thread(current_user_id, request)
     except ValueError as e:
         return auth_error_response(e)
     rows = conversation_store.list_conversations(user_id)
     return {"code": 200, "message": "success", "data": [_conversation_dto(r) for r in rows]}
+=======
+        user_id = current_user_id(request)
+    except ValueError as e:
+        return auth_error_response(e)
+    rows = conversation_store.list_conversations(user_id)
+    return {"code": 200, "message": "success", "data": rows}
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
 
 @app.get("/agent/conversations/{conversation_id}/messages")
 async def conversation_messages(request: Request, conversation_id: int):
     try:
+<<<<<<< HEAD
         # pymysql 同步调用下沉线程池，避免阻塞事件循环
         user_id = await asyncio.to_thread(current_user_id, request)
+=======
+        user_id = current_user_id(request)
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     except ValueError as e:
         return auth_error_response(e)
     try:
@@ -342,6 +406,7 @@ async def conversation_messages(request: Request, conversation_id: int):
 @app.patch("/agent/conversations/{conversation_id}")
 async def rename_conversation(request: Request, conversation_id: int):
     try:
+<<<<<<< HEAD
         # pymysql 同步调用下沉线程池，避免阻塞事件循环
         user_id = await asyncio.to_thread(current_user_id, request)
     except ValueError as e:
@@ -353,6 +418,12 @@ async def rename_conversation(request: Request, conversation_id: int):
             body = parsed
     except Exception:
         pass  # 空/非法请求体按无字段处理，rename 对缺失 title 给出明确 400
+=======
+        user_id = current_user_id(request)
+    except ValueError as e:
+        return auth_error_response(e)
+    body = await request.json()
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     try:
         row = conversation_store.rename(user_id, conversation_id, body.get("title"))
     except conversation_store.NotFound:
@@ -367,8 +438,12 @@ async def rename_conversation(request: Request, conversation_id: int):
 @app.delete("/agent/conversations/{conversation_id}")
 async def delete_conversation(request: Request, conversation_id: int):
     try:
+<<<<<<< HEAD
         # pymysql 同步调用下沉线程池，避免阻塞事件循环
         user_id = await asyncio.to_thread(current_user_id, request)
+=======
+        user_id = current_user_id(request)
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     except ValueError as e:
         return auth_error_response(e)
     try:
@@ -383,4 +458,8 @@ async def delete_conversation(request: Request, conversation_id: int):
 if __name__ == "__main__":
     import uvicorn
 
+<<<<<<< HEAD
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("AGENT_PORT", "8000")))
+=======
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4

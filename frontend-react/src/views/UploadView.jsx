@@ -1,10 +1,16 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+<<<<<<< HEAD
 import { FileText, FileUp, Globe2, Loader2, X } from 'lucide-react'
 import { api } from '../lib/api'
 import { CATEGORIES } from '../lib/categories'
 import { useToast } from '../context/ToastContext'
 import { useConfirm } from '../context/ConfirmContext'
+=======
+import { FileText, FileUp, Loader2, X } from 'lucide-react'
+import { api } from '../lib/api'
+import { useToast } from '../context/ToastContext'
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
 const EMPTY_META = { title: '', authors: '', journal: '', year: '', doi: '' }
 const MAX_FILE_SIZE = 50 * 1024 * 1024
@@ -14,10 +20,14 @@ export default function UploadView() {
   const [drag, setDrag] = useState(false)
   const [meta, setMeta] = useState(EMPTY_META)
   const [busy, setBusy] = useState(false)
+<<<<<<< HEAD
   const [toCommunity, setToCommunity] = useState(false)
   const [category, setCategory] = useState('')
   const toast = useToast()
   const confirm = useConfirm()
+=======
+  const toast = useToast()
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
   const navigate = useNavigate()
   const inputRef = useRef(null)
 
@@ -36,6 +46,7 @@ export default function UploadView() {
 
   const submit = async () => {
     if (!file || busy) return
+<<<<<<< HEAD
     if (toCommunity && !category) {
       toast('贡献到社区时请选择一个板块', 'error')
       return
@@ -53,12 +64,21 @@ export default function UploadView() {
     fd.append('file', file)
     fd.append('isPublic', toCommunity ? 'true' : 'false')
     if (category) fd.append('category', category)
+=======
+    setBusy(true)
+    const fd = new FormData()
+    fd.append('file', file)
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     Object.entries(meta).forEach(([k, v]) => {
       if (v) fd.append(k, v)
     })
     try {
       const lit = await api.uploadLiterature(fd)
+<<<<<<< HEAD
       toast(toCommunity ? '上传成功，已贡献到社区总知识库' : '上传成功，文献保存在你的私有知识库')
+=======
+      toast('上传成功，向量索引已建立')
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
       navigate(`/literature/${lit.id}`)
     } catch (e) {
       toast(e.message, 'error')
@@ -73,7 +93,11 @@ export default function UploadView() {
       <header className="section-head">
         <div>
           <h2 className="section-title">上传文献</h2>
+<<<<<<< HEAD
           <p className="section-sub">上传 PDF 后系统在后台自动提取元数据、建立向量索引并抽取知识要点</p>
+=======
+          <p className="section-sub">上传 PDF 后系统自动提取元数据、切分文本并建立向量索引</p>
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         </div>
       </header>
 
@@ -139,12 +163,17 @@ export default function UploadView() {
           <label htmlFor="up-year">年份</label>
           <input id="up-year" value={meta.year} onChange={set('year')} placeholder="如 2025" inputMode="numeric" />
         </div>
+<<<<<<< HEAD
         <div className="field field-full">
+=======
+        <div className="field">
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
           <label htmlFor="up-doi">DOI</label>
           <input id="up-doi" value={meta.doi} onChange={set('doi')} placeholder="可选" />
         </div>
       </div>
 
+<<<<<<< HEAD
       <label className="community-check">
         <input
           type="checkbox"
@@ -170,6 +199,8 @@ export default function UploadView() {
         </div>
       )}
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
       <button type="button" className="btn-primary upload-submit" onClick={submit} disabled={!file || busy}>
         {busy ? (
           <>

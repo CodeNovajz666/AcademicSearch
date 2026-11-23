@@ -19,7 +19,10 @@ import io.milvus.v2.service.vector.response.SearchResp;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+<<<<<<< HEAD
 import org.springframework.beans.factory.annotation.Value;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -29,7 +32,11 @@ import java.util.Map;
 
 /**
  * Milvus 向量库访问层：literature_chunks collection 的建/插/搜/删。
+<<<<<<< HEAD
  * 结构与 agent-python/milvus_store.py 保持一致（embedding 维度见 milvus.embedding-dim 配置）。
+=======
+ * 结构与 agent-python/milvus_store.py 保持一致（embedding 维度 1536）。
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
  * 通过 ObjectProvider 惰性获取客户端：Milvus 未启动时后端仍可正常启动，
  * 仅向量相关操作会返回明确错误。
  */
@@ -39,6 +46,7 @@ import java.util.Map;
 public class MilvusVectorStore {
 
     public static final String COLLECTION = "literature_chunks";
+<<<<<<< HEAD
 
     private final ObjectProvider<MilvusClientV2> clientProvider;
 
@@ -56,10 +64,17 @@ public class MilvusVectorStore {
     private final java.util.concurrent.atomic.AtomicBoolean scalarSupported =
             new java.util.concurrent.atomic.AtomicBoolean(true);
 
+=======
+    private static final int EMBEDDING_DIM = 1536;
+
+    private final ObjectProvider<MilvusClientV2> clientProvider;
+
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     private MilvusClientV2 client() {
         return clientProvider.getObject();
     }
 
+<<<<<<< HEAD
     /** 调用前先确保 collection 已建/探测完成：否则首请求会在探测落地前读到默认 true，拼出 v1 集合无法解析的标量过滤表达式（500）。 */
     public boolean isScalarFieldsSupported() {
         ensureCollection();
@@ -74,6 +89,11 @@ public class MilvusVectorStore {
                 .collectionName(COLLECTION).build())) {
             collectionReady.set(true);
             probeScalarFields();
+=======
+    public synchronized void ensureCollection() {
+        if (client().hasCollection(HasCollectionReq.builder()
+                .collectionName(COLLECTION).build())) {
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
             return;
         }
 
@@ -89,6 +109,7 @@ public class MilvusVectorStore {
         schema.addField(AddFieldReq.builder()
                 .fieldName("chunk_text").dataType(DataType.VarChar)
                 .maxLength(2048).build());
+<<<<<<< HEAD
         // v2 标量字段：可见性/属主直接在 Milvus 内过滤，替代"全量 id 拼长表达式"
         schema.addField(AddFieldReq.builder()
                 .fieldName("user_id").dataType(DataType.Int64).build());
@@ -97,6 +118,11 @@ public class MilvusVectorStore {
         schema.addField(AddFieldReq.builder()
                 .fieldName("embedding").dataType(DataType.FloatVector)
                 .dimension(embeddingDim).build());
+=======
+        schema.addField(AddFieldReq.builder()
+                .fieldName("embedding").dataType(DataType.FloatVector)
+                .dimension(EMBEDDING_DIM).build());
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
         List<IndexParam> indexParams = List.of(IndexParam.builder()
                 .fieldName("embedding")
@@ -110,6 +136,7 @@ public class MilvusVectorStore {
                 .collectionSchema(schema)
                 .indexParams(indexParams)
                 .build());
+<<<<<<< HEAD
         collectionReady.set(true);
         scalarSupported.set(true);
         log.info("Created Milvus collection {} (dim={}, with scalar fields)", COLLECTION, embeddingDim);
@@ -180,11 +207,20 @@ public class MilvusVectorStore {
     /** 带可见性标量插入（v2 schema）；userId 为 null 或 v1 collection 时省略标量字段。 */
     public void insertChunks(Long literatureId, List<String> chunks, List<List<Double>> vectors,
                              Long userId, Boolean isPublic) {
+=======
+        log.info("Created Milvus collection {} (dim={})", COLLECTION, EMBEDDING_DIM);
+    }
+
+    public void insertChunks(Long literatureId, List<String> chunks, List<List<Double>> vectors) {
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         if (chunks == null || chunks.isEmpty()) {
             return;
         }
         ensureCollection();
+<<<<<<< HEAD
         boolean withScalars = isScalarFieldsSupported() && userId != null;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
         List<JsonObject> rows = new ArrayList<>(chunks.size());
         for (int i = 0; i < chunks.size(); i++) {
@@ -193,10 +229,13 @@ public class MilvusVectorStore {
             row.addProperty("chunk_index", i);
             row.addProperty("chunk_text", chunks.get(i).length() > 2048
                     ? chunks.get(i).substring(0, 2048) : chunks.get(i));
+<<<<<<< HEAD
             if (withScalars) {
                 row.addProperty("user_id", userId);
                 row.addProperty("is_public", Boolean.TRUE.equals(isPublic));
             }
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
             com.google.gson.JsonArray vec = new com.google.gson.JsonArray(vectors.get(i).size());
             for (Double d : vectors.get(i)) {
                 vec.add(d);
@@ -207,6 +246,7 @@ public class MilvusVectorStore {
 
         client().insert(InsertReq.builder().collectionName(COLLECTION).data(rows).build());
         client().flush(FlushReq.builder().collectionNames(List.of(COLLECTION)).build());
+<<<<<<< HEAD
         log.info("Inserted {} chunks into Milvus for literature {} (scalars={})",
                 chunks.size(), literatureId, withScalars);
     }
@@ -220,23 +260,38 @@ public class MilvusVectorStore {
      * 用于"我的知识库"私有范围检索——无需改 collection schema、无需重建向量。
      */
     public List<SearchHit> search(List<Double> queryVector, int topK, String filterExpr) {
+=======
+        log.info("Inserted {} chunks into Milvus for literature {}", chunks.size(), literatureId);
+    }
+
+    public List<SearchHit> search(List<Double> queryVector, int topK) {
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         ensureCollection();
         if (getRowCount() == 0) {
             return List.of();
         }
 
+<<<<<<< HEAD
         SearchReq.SearchReqBuilder<?, ?> builder = SearchReq.builder()
+=======
+        SearchResp resp = client().search(SearchReq.builder()
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
                 .collectionName(COLLECTION)
                 .annsField("embedding")
                 .data(Collections.singletonList(toFloatVec(queryVector)))
                 .topK(Math.max(1, Math.min(topK, 50)))
                 .outputFields(List.of("literature_id", "chunk_text"))
+<<<<<<< HEAD
                 // params 必须是 JSON 字符串：传 Map 会被 SDK toString 成 "{ef=64}" 导致 Milvus 表达式解析失败
                 .searchParams(Map.of("metric_type", "COSINE", "params", "{\"ef\": 64}"));
         if (filterExpr != null && !filterExpr.isBlank()) {
             builder.filter(filterExpr);
         }
         SearchResp resp = client().search(builder.build());
+=======
+                .searchParams(Map.of("metric_type", "COSINE", "params", Map.of("ef", 64)))
+                .build());
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
         List<SearchHit> hits = new ArrayList<>();
         for (List<SearchResp.SearchResult> results : resp.getSearchResults()) {

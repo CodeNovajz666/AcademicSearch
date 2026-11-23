@@ -29,6 +29,7 @@ public class DashScopeService {
      */
     private static final int EMBEDDING_BATCH_SIZE = 10;
 
+<<<<<<< HEAD
     /**
      * 限流/瞬时错误的自动重试：上传后台处理会连续触发 embedding + 知识抽取，
      * 免费档位极易撞上 429（Throttling.RateQuota），一次失败不应让整篇文献的知识抽取报废。
@@ -36,6 +37,8 @@ public class DashScopeService {
      */
     private static final int MAX_ATTEMPTS = 4;
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     private final DashScopeConfig config;
     private final ObjectMapper objectMapper;
 
@@ -68,8 +71,12 @@ public class DashScopeService {
     private List<List<Double>> requestEmbeddings(List<String> texts) {
         Map<String, Object> body = new HashMap<>();
         body.put("model", config.getModelName());
+<<<<<<< HEAD
         // DashScope embedding 接口要求 input 为 {"texts": [...]}，直接传数组会 400 IllegalInput
         body.put("input", Map.of("texts", texts));
+=======
+        body.put("input", texts);
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         String responseBody = post(config.getEndpoint(), body);
 
         JsonNode rootNode;
@@ -124,6 +131,7 @@ public class DashScopeService {
         return chatRaw(config.getChatModelName(), systemPrompt, fullPrompt);
     }
 
+<<<<<<< HEAD
     public String chatRaw(String model, String systemPrompt, String userContent) {
         return chatRaw(model, systemPrompt, userContent, 2048);
     }
@@ -136,10 +144,15 @@ public class DashScopeService {
      * 否则 JSON 被截断成非法文本导致解析失败（表现为"知识要点抽取无结果"）。
      */
     public String chatRaw(String model, String systemPrompt, String userContent, int maxTokens) {
+=======
+    /** 单轮原生对话（无工具） */
+    public String chatRaw(String model, String systemPrompt, String userContent) {
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         requireApiKey();
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", model);
+<<<<<<< HEAD
         body.put("messages", List.of(
                 Map.of("role", "system", "content", systemPrompt),
                 Map.of("role", "user", "content", userContent)));
@@ -147,11 +160,27 @@ public class DashScopeService {
         body.put("enable_thinking", false);
         body.put("temperature", 0.7);
         body.put("max_tokens", maxTokens);
+=======
+        body.put("input", Map.of("messages", List.of(
+                Map.of("role", "system", "content", systemPrompt),
+                Map.of("role", "user", "content", userContent))));
+
+        Map<String, Object> parameters = new HashMap<>();
+        // 不传该参数时可能返回 output.text 而非 output.choices[].message 结构
+        parameters.put("result_format", "message");
+        parameters.put("temperature", 0.7);
+        parameters.put("max_tokens", 2048);
+        body.put("parameters", parameters);
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
         String responseBody = post(config.getChatEndpoint(), body);
         JsonNode root = parseOrThrow(responseBody);
 
+<<<<<<< HEAD
         JsonNode message = root.path("choices").path(0).path("message");
+=======
+        JsonNode message = root.path("output").path("choices").path(0).path("message");
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         if (message.isMissingNode()) {
             throw new DashScopeApiException("No message returned: " + truncate(responseBody, 300));
         }
@@ -175,6 +204,7 @@ public class DashScopeService {
                 .post(RequestBody.create(json, MediaType.parse("application/json")))
                 .build();
 
+<<<<<<< HEAD
         long backoffMs = 5000;
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             try (Response response = okHttpClient.newCall(request).execute()) {
@@ -229,6 +259,16 @@ public class DashScopeService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new DashScopeApiException("Interrupted while waiting for DashScope retry");
+=======
+        try (Response response = okHttpClient.newCall(request).execute()) {
+            String responseBody = response.body() != null ? response.body().string() : "";
+            if (!response.isSuccessful()) {
+                throw new DashScopeApiException("DashScope API " + response.code() + ": " + truncate(responseBody, 300));
+            }
+            return responseBody;
+        } catch (IOException e) {
+            throw new DashScopeApiException("Failed to call DashScope API", e);
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         }
     }
 

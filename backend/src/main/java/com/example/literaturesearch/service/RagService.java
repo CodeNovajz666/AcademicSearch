@@ -19,6 +19,7 @@ public class RagService {
     private final DashScopeService dashScopeService;
 
     public RagAnswerResponse query(String question, int topK) {
+<<<<<<< HEAD
         return query(question, topK, null);
     }
 
@@ -27,20 +28,40 @@ public class RagService {
         VectorService.RetrievalResult retrieval = vectorService.retrieve(question, topK, ownerScope);
 
         if (retrieval.results().isEmpty()) {
+=======
+        List<SearchResult> searchResults = vectorService.search(question, topK);
+        
+        if (searchResults.isEmpty()) {
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
             return RagAnswerResponse.builder()
                     .answer("未找到相关文献，无法回答该问题。")
                     .references(List.of())
                     .build();
         }
 
+<<<<<<< HEAD
         String answer = dashScopeService.chat(question, retrieval.context());
 
         List<LiteratureResponse> references = retrieval.results().stream()
+=======
+        List<Long> literatureIds = searchResults.stream()
+                .map(r -> r.getLiterature().getId())
+                .collect(Collectors.toList());
+
+        String context = vectorService.getContextForLiterature(literatureIds);
+        String answer = dashScopeService.chat(question, context);
+
+        List<LiteratureResponse> references = searchResults.stream()
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
                 .map(SearchResult::getLiterature)
                 .collect(Collectors.toList());
 
         log.info("RAG query completed, found {} relevant literatures", references.size());
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         return RagAnswerResponse.builder()
                 .answer(answer)
                 .references(references)

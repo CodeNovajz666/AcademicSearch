@@ -7,7 +7,11 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
+<<<<<<< HEAD
         <version>3.5.7</version>
+=======
+        <version>3.2.0</version>
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         <relativePath/>
     </parent>
 
@@ -66,12 +70,15 @@
         </dependency>
 
         <dependency>
+<<<<<<< HEAD
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-captcha</artifactId>
             <version>5.8.32</version>
         </dependency>
 
         <dependency>
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>

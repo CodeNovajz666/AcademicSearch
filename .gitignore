@@ -20,6 +20,7 @@ backend/uploads/
 uploads/
 agent-python/__pycache__
 agent-python/.pip-cache
+<<<<<<< HEAD
 agent-python/.venv/
 milvus/volumes/
 
@@ -28,6 +29,8 @@ test-token.txt
 captcha-id.txt
 captcha-*.png
 *.log
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
 # IDE
 .idea/

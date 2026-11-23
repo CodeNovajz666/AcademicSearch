@@ -6,6 +6,7 @@ spring:
     name: literature-search
 
   # 支持从项目根目录或 backend 目录下的 .env 文件读取环境变量（.env 已被 .gitignore 忽略）
+<<<<<<< HEAD
   # ../.env 兼容 cd backend && mvn spring-boot:run 的工作目录（JVM cwd=backend/）
   config:
     import: optional:file:.env[.properties],optional:file:backend/.env[.properties],optional:file:../.env[.properties]
@@ -16,6 +17,15 @@ spring:
     username: ${DB_USERNAME:root}
     # 不提供默认密码：未配置时启动即失败，避免带着弱口令静默运行
     password: ${DB_PASSWORD:}
+=======
+  config:
+    import: optional:file:.env[.properties],optional:file:backend/.env[.properties]
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/example_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -39,6 +49,7 @@ spring:
 aliyun:
   dashscope:
     api-key: ${DASHSCOPE_API_KEY:}
+<<<<<<< HEAD
     # embedding 走 DashScope 原生端点（text-embedding-v1 仅在原生端点提供）
     endpoint: https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding
     # 对话走 OpenAI 兼容端点：qwen3.8 系列思考模型仅在 compatible-mode 提供，
@@ -55,6 +66,18 @@ jwt:
   # access 令牌 2 小时（过期由前端静默刷新续期，缩短被盗令牌可用窗口）
   expiration: 7200000
   # refresh 令牌 7 天（登出时吊销，见 RevokedTokenRepository）
+=======
+    # 官方文档端点，如使用业务空间（Workspace）部署，可改为
+    # https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api/v1/services/... 形式
+    endpoint: https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding
+    chat-endpoint: https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation
+    model-name: text-embedding-v1
+    chat-model-name: qwen-turbo
+
+jwt:
+  secret: ${JWT_SECRET:literature-search-jwt-secret-key-2024}
+  expiration: 86400000
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
   refresh-expiration: 604800000
 
 app:
@@ -65,8 +88,11 @@ app:
 milvus:
   # 向量库地址（milvus/docker-compose.yml 启动的 standalone 实例）
   uri: ${MILVUS_URI:http://localhost:19530}
+<<<<<<< HEAD
   # embedding 维度须与 DashScope 嵌入模型一致（text-embedding-v1/v2 = 1536），换模型时同步修改
   embedding-dim: ${MILVUS_EMBEDDING_DIM:1536}
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
 logging:
   level:

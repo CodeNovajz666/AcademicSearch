@@ -15,7 +15,10 @@
   --surface: #ffffff;
   --surface-2: #f4f4f6;
   --surface-3: #ebebef;
+<<<<<<< HEAD
   --bg-elevated: #ffffff;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
   --text-primary: #16161a;
   --text-secondary: #6e6e76;
   --text-tertiary: #a2a2aa;
@@ -42,7 +45,10 @@
   --surface: #131317;
   --surface-2: #1a1a20;
   --surface-3: #22222a;
+<<<<<<< HEAD
   --bg-elevated: #15161d;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
   --text-primary: #f2f2f5;
   --text-secondary: #9b9ba4;
   --text-tertiary: #5d5d66;
@@ -61,6 +67,7 @@
   color-scheme: dark;
 }
 
+<<<<<<< HEAD
 /* 护眼 · 豆沙绿 */
 [data-theme="eye"] {
   --bg: #cce8cf;
@@ -88,6 +95,8 @@
   color-scheme: light;
 }
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 /* ---------- 基础 ---------- */
 * {
   box-sizing: border-box;
@@ -259,6 +268,7 @@ button {
   color: var(--accent);
   background: var(--accent-soft);
 }
+<<<<<<< HEAD
 .rail-login-btn {
   color: var(--accent);
   background: var(--accent-soft);
@@ -268,6 +278,8 @@ button {
   background: var(--accent-soft);
   filter: brightness(1.08);
 }
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 .rail-tip {
   position: absolute;
   left: calc(100% + 14px);
@@ -770,9 +782,12 @@ button {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+<<<<<<< HEAD
   /* 摘要排版：两端对齐 + 长词不断行溢出 */
   text-align: justify;
   overflow-wrap: break-word;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 }
 .lit-snippet {
   margin-top: 14px;
@@ -927,6 +942,7 @@ button {
   color: var(--text-secondary);
   max-width: 360px;
 }
+<<<<<<< HEAD
 /* 仅作用于 action 直接传入的按钮；包在 .guest-actions 等容器里的按钮不受此 margin 影响 */
 .empty-state > .btn-primary {
   margin-top: 18px;
@@ -946,6 +962,11 @@ button {
   font-size: 14.5px;
   gap: 8px;
 }
+=======
+.empty-state .btn-primary {
+  margin-top: 18px;
+}
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
 /* ---------- 按钮 ---------- */
 .btn-primary {
@@ -1121,6 +1142,7 @@ button {
   color: var(--text-secondary);
   font-size: 12.5px;
 }
+<<<<<<< HEAD
 /* 文献卡头部标签：统一规格（固定高度 + 统一最小宽度 + 文字居中不换行，内容永不被裁切） */
 .lit-card-head .chip {
   flex-shrink: 0;
@@ -1130,6 +1152,8 @@ button {
   padding: 0 12px;
   white-space: nowrap;
 }
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 .detail-authors {
   margin-top: 14px;
   font-size: 15px;
@@ -1147,14 +1171,18 @@ button {
   text-transform: uppercase;
   color: var(--text-tertiary);
   margin-bottom: 16px;
+<<<<<<< HEAD
   display: flex;
   align-items: center;
   gap: 7px;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 }
 .detail-section p {
   font-size: 16px;
   line-height: 1.8;
   color: var(--text-primary);
+<<<<<<< HEAD
   /* 长文阅读排版：两端对齐 + 断词保护 + 舒适行长 */
   text-align: justify;
   overflow-wrap: break-word;
@@ -2282,6 +2310,8 @@ button {
     flex-direction: column;
     align-items: flex-start;
   }
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 }
 .detail-foot {
   margin-top: 40px;
@@ -2473,6 +2503,7 @@ button {
   color: var(--text-primary);
   background: var(--surface-2);
 }
+<<<<<<< HEAD
 .captcha-row {
   display: flex;
   gap: 10px;
@@ -2506,6 +2537,8 @@ button {
   background: var(--surface);
   color: var(--text-tertiary);
 }
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 .auth-remember {
   display: flex;
   align-items: center;
@@ -2757,16 +2790,25 @@ button {
   color: var(--accent);
 }
 .cp-steps {
+<<<<<<< HEAD
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
   margin: 8px 0 12px;
   padding: 10px 12px 10px 12px;
+=======
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
   border-radius: 12px;
   background: var(--surface-2);
   border: 1px solid var(--border);
 }
+<<<<<<< HEAD
 /* 思维链路时间轴竖线：穿过每步的圆点图标中心 */
 .cp-steps::before {
   content: '';
@@ -2784,6 +2826,12 @@ button {
   display: flex;
   gap: 8px;
   align-items: flex-start;
+=======
+.cp-step {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
   font-size: 12.5px;
   line-height: 1.6;
   color: var(--text-secondary);
@@ -2796,6 +2844,7 @@ button {
   }
 }
 .cp-step-ic {
+<<<<<<< HEAD
   position: relative;
   z-index: 1;
   flex-shrink: 0;
@@ -2826,6 +2875,15 @@ button {
   flex: 1;
   min-width: 0;
 }
+=======
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--accent);
+}
+.cp-step-tool_call .cp-step-ic {
+  color: var(--text-tertiary);
+}
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 .cp-step-tx {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2834,6 +2892,7 @@ button {
   -webkit-box-orient: vertical;
 }
 
+<<<<<<< HEAD
 /* 思考步骤：虚线卡片，默认两行截断，点击展开完整思维链 */
 .cp-thinking {
   display: flex;
@@ -2910,6 +2969,8 @@ button {
   white-space: nowrap;
 }
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 .cp-answer {
   font-size: 14.5px;
   white-space: normal;
@@ -3030,6 +3091,7 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+<<<<<<< HEAD
 
 /* ==================== 通用确认对话框 ==================== */
 .confirm-overlay {
@@ -3656,3 +3718,5 @@ button {
   .notes-group-title { max-width: 28ch; }
   .ws-mark-hint { font-size: 11px; }
 }
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4

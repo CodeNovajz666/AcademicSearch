@@ -6,7 +6,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class LiteratureServiceTest {
 
+<<<<<<< HEAD
     private final LiteratureService literatureService = new LiteratureService(null, null, null, null, null);
+=======
+    private final LiteratureService literatureService = new LiteratureService(null, null);
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
     @Test
     void extractAbstract_nullOrEmpty_returnsNull() {
@@ -38,6 +42,7 @@ class LiteratureServiceTest {
         String content = "Title\nAbstract Deep learning models improve retrieval.\nIntroduction\nIn this paper";
         assertEquals("Deep learning models improve retrieval.", literatureService.extractAbstract(content));
     }
+<<<<<<< HEAD
 
     @Test
     void extractAbstract_stripsTrailingSectionNumber() {
@@ -59,4 +64,6 @@ class LiteratureServiceTest {
         String content = "Title\nAbstract " + "x".repeat(9000);
         assertEquals(9000, literatureService.extractAbstract(content).length());
     }
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 }

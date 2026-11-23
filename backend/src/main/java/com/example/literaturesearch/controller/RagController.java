@@ -18,6 +18,7 @@ public class RagController {
 
     @PostMapping("/query")
     public ResponseEntity<ApiResponse<RagAnswerResponse>> query(
+<<<<<<< HEAD
             @org.springframework.security.core.annotation.AuthenticationPrincipal com.example.literaturesearch.entity.User user,
             @RequestBody RagQueryRequest request) {
 
@@ -25,11 +26,18 @@ public class RagController {
         log.debug("RAG query: {} scope={}", truncate(request.getQuestion()), request.getScope());
         Long ownerScope = "mine".equals(request.getScope()) && user != null ? user.getId() : null;
         RagAnswerResponse response = ragService.query(request.getQuestion(), request.getTopK(), ownerScope);
+=======
+            @RequestBody RagQueryRequest request) {
+        
+        log.info("RAG query: {}", request.getQuestion());
+        RagAnswerResponse response = ragService.query(request.getQuestion(), request.getTopK());
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/query")
     public ResponseEntity<ApiResponse<RagAnswerResponse>> queryGet(
+<<<<<<< HEAD
             @org.springframework.security.core.annotation.AuthenticationPrincipal com.example.literaturesearch.entity.User user,
             @RequestParam("question") String question,
             @RequestParam(value = "topK", defaultValue = "5") int topK,
@@ -51,6 +59,19 @@ public class RagController {
         private int topK = 5;
         /** 知识库范围：all=总知识库（默认），mine=我的私有知识库 */
         private String scope = "all";
+=======
+            @RequestParam("question") String question,
+            @RequestParam(value = "topK", defaultValue = "5") int topK) {
+        
+        log.info("RAG query (GET): {}", question);
+        RagAnswerResponse response = ragService.query(question, topK);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    public static class RagQueryRequest {
+        private String question;
+        private int topK = 5;
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
         public String getQuestion() {
             return question;
@@ -67,6 +88,7 @@ public class RagController {
         public void setTopK(int topK) {
             this.topK = topK;
         }
+<<<<<<< HEAD
 
         public String getScope() {
             return scope;
@@ -75,5 +97,7 @@ public class RagController {
         public void setScope(String scope) {
             this.scope = scope;
         }
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     }
 }

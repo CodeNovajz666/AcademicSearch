@@ -1,13 +1,19 @@
 package com.example.literaturesearch.filter;
 
 import com.example.literaturesearch.util.JwtUtil;
+<<<<<<< HEAD
 import io.jsonwebtoken.JwtException;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+<<<<<<< HEAD
 import org.springframework.http.MediaType;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,7 +24,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+<<<<<<< HEAD
 import java.nio.charset.StandardCharsets;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
 @Component
 @RequiredArgsConstructor
@@ -33,6 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+<<<<<<< HEAD
         // 公共认证端点完全跳过 JWT 处理：用户带着"过期令牌"来重新登录时，
         // 登录请求自身也携带旧 Authorization 头，若在此处解析失败直接拒绝，
         // 登录将永远无法到达控制器（死锁在"登录已过期"提示上）。
@@ -44,12 +54,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         final String authHeader = request.getHeader("Authorization");
+=======
+        final String authHeader = request.getHeader("Authorization");
+        final String jwt;
+        final String userEmail;
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
+<<<<<<< HEAD
         String jwt = authHeader.substring(7);
         String userEmail;
         try {
@@ -74,6 +90,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 writeUnauthorized(response, "登录已过期，请重新登录");
                 return;
             }
+=======
+        jwt = authHeader.substring(7);
+        userEmail = jwtUtil.extractEmail(jwt);
+
+        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
             if (jwtUtil.validateToken(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -90,6 +113,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
+<<<<<<< HEAD
 
     private static void writeUnauthorized(HttpServletResponse response, String message) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -98,4 +122,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.getWriter().write(
                 "{\"code\":401,\"message\":\"" + message + "\",\"data\":null}");
     }
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 }

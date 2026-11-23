@@ -34,6 +34,7 @@ public class User implements UserDetails {
     @Column(nullable = false, length = 255)
     private String password;
 
+<<<<<<< HEAD
     /** 用户自备 DashScope API Key（明文存储，按用户要求不做掩码/加密）；为空时回退到服务器默认 Key */
     @Column(name = "dashscope_api_key", length = 512)
     private String dashscopeApiKey;
@@ -46,6 +47,8 @@ public class User implements UserDetails {
     @Column(name = "subagent_model", length = 64)
     private String subagentModel;
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.emptyList();

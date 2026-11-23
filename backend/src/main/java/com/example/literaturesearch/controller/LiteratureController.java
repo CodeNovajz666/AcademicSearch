@@ -8,9 +8,12 @@ import com.example.literaturesearch.service.LiteratureService;
 import com.example.literaturesearch.service.VectorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+<<<<<<< HEAD
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,7 +21,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+<<<<<<< HEAD
 import java.nio.charset.StandardCharsets;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 import java.util.List;
 
 @Slf4j
@@ -29,7 +35,10 @@ public class LiteratureController {
 
     private final LiteratureService literatureService;
     private final VectorService vectorService;
+<<<<<<< HEAD
     private final com.example.literaturesearch.service.RecommendationService recommendationService;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<LiteratureResponse>> uploadLiterature(
@@ -39,6 +48,7 @@ public class LiteratureController {
             @RequestParam(value = "authors", required = false) String authors,
             @RequestParam(value = "journal", required = false) String journal,
             @RequestParam(value = "year", required = false) Integer year,
+<<<<<<< HEAD
             @RequestParam(value = "doi", required = false) String doi,
             @RequestParam(value = "isPublic", required = false, defaultValue = "false") Boolean isPublic,
             @RequestParam(value = "category", required = false) String category) throws IOException {
@@ -46,10 +56,17 @@ public class LiteratureController {
         log.info("Uploading literature: {} isPublic={} category={}", file.getOriginalFilename(), isPublic, category);
         LiteratureResponse response = literatureService.uploadLiterature(
                 file, title, authors, journal, year, doi, user.getId(), isPublic, category);
+=======
+            @RequestParam(value = "doi", required = false) String doi) throws IOException {
+
+        log.info("Uploading literature: {}", file.getOriginalFilename());
+        LiteratureResponse response = literatureService.uploadLiterature(file, title, authors, journal, year, doi, user.getId());
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         return ResponseEntity.ok(ApiResponse.success("上传成功", response));
     }
 
     @GetMapping("/{id}")
+<<<<<<< HEAD
     public ResponseEntity<ApiResponse<LiteratureResponse>> getLiteratureById(
             @AuthenticationPrincipal User user,
             @PathVariable Long id) {
@@ -103,6 +120,16 @@ public class LiteratureController {
             @RequestParam(value = "size", required = false, defaultValue = "12") int size) {
         var response = literatureService.listLiteratures(
                 scope, board, user.getId(), starred, sortBy, order, page, size);
+=======
+    public ResponseEntity<ApiResponse<LiteratureResponse>> getLiteratureById(@PathVariable Long id) {
+        LiteratureResponse response = literatureService.getLiteratureById(id);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<LiteratureResponse>>> getAllLiteratures() {
+        List<LiteratureResponse> response = literatureService.getAllLiteratures();
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -114,6 +141,7 @@ public class LiteratureController {
         return ResponseEntity.ok(ApiResponse.success("删除成功", null));
     }
 
+<<<<<<< HEAD
     /** 切换可见性：公开到社区总知识库 / 设回私有（仅属主）。 */
     @PutMapping("/{id}/visibility")
     public ResponseEntity<ApiResponse<LiteratureResponse>> setVisibility(
@@ -158,6 +186,15 @@ public class LiteratureController {
                 query != null && query.length() > 80 ? query.substring(0, 80) + "..." : query, scope);
         Long ownerScope = "mine".equals(scope) && user != null ? user.getId() : null;
         List<SearchResult> results = vectorService.search(query, topK, ownerScope);
+=======
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<List<SearchResult>>> searchLiterature(
+            @RequestParam("query") String query,
+            @RequestParam(value = "topK", defaultValue = "10") int topK) {
+        
+        log.info("Searching literature with query: {}", query);
+        List<SearchResult> results = vectorService.search(query, topK);
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         return ResponseEntity.ok(ApiResponse.success(results));
     }
 }

@@ -1,12 +1,19 @@
+<<<<<<< HEAD
 import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { Lock } from 'lucide-react'
 import { ThemeProvider } from './context/ThemeContext'
 import { ToastProvider } from './context/ToastContext'
 import { ConfirmProvider } from './context/ConfirmContext'
+=======
+import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { ThemeProvider } from './context/ThemeContext'
+import { ToastProvider } from './context/ToastContext'
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 import { AuthProvider, useAuth } from './context/AuthContext'
 import ParticleField from './components/ParticleField'
 import NavRail from './components/NavRail'
 import CopilotPanel from './components/CopilotPanel'
+<<<<<<< HEAD
 import EmptyState from './components/EmptyState'
 import HomeView from './views/HomeView'
 import SearchView from './views/SearchView'
@@ -16,6 +23,12 @@ import NotesView from './views/NotesView'
 import SettingsView from './views/SettingsView'
 import DetailView from './views/DetailView'
 import WorkspaceView from './views/WorkspaceView'
+=======
+import HomeView from './views/HomeView'
+import SearchView from './views/SearchView'
+import LibraryView from './views/LibraryView'
+import DetailView from './views/DetailView'
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 import UploadView from './views/UploadView'
 import LoginView from './views/LoginView'
 import RegisterView from './views/RegisterView'
@@ -38,6 +51,7 @@ function AppShell() {
   )
 }
 
+<<<<<<< HEAD
 /** 功能页守卫：游客可浏览应用外壳，进入功能页时显示登录引导卡（不硬跳转） */
 function RequireLogin() {
   const { user } = useAuth()
@@ -59,6 +73,13 @@ function RequireLogin() {
     )
   }
   return <Outlet />
+=======
+/** 登录守卫：未登录访问任何功能页一律跳转登录 */
+function RequireAuth() {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  return <AppShell />
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 }
 
 function RedirectIfAuthed({ children }) {
@@ -70,13 +91,18 @@ export default function App() {
   return (
     <ThemeProvider>
       <ToastProvider>
+<<<<<<< HEAD
         <ConfirmProvider>
           <BrowserRouter>
+=======
+        <BrowserRouter>
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
           <AuthProvider>
             <ParticleField />
             <Routes>
               <Route path="/login" element={<RedirectIfAuthed><LoginView /></RedirectIfAuthed>} />
               <Route path="/register" element={<RedirectIfAuthed><RegisterView /></RedirectIfAuthed>} />
+<<<<<<< HEAD
               <Route element={<AppShell />}>
                 <Route path="/" element={<HomeView />} />
                 <Route path="/search" element={<SearchView />} />
@@ -93,12 +119,24 @@ export default function App() {
                   原阅读模式已并入，精读/批注/对话统一在此完成 */}
               <Route element={<RequireLogin />}>
                 <Route path="/workspace/:id" element={<WorkspaceView />} />
+=======
+              <Route element={<RequireAuth />}>
+                <Route path="/" element={<HomeView />} />
+                <Route path="/search" element={<SearchView />} />
+                <Route path="/library" element={<LibraryView />} />
+                <Route path="/literature/:id" element={<DetailView />} />
+                <Route path="/upload" element={<UploadView />} />
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AuthProvider>
+<<<<<<< HEAD
           </BrowserRouter>
         </ConfirmProvider>
+=======
+        </BrowserRouter>
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
       </ToastProvider>
     </ThemeProvider>
   )

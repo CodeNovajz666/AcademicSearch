@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
@@ -21,11 +22,20 @@ const CITATIONS = [
   { key: 'gbt', label: 'GB/T 7714（中文期刊）', gen: toGBT7714 },
   { key: 'apa', label: 'APA', gen: toAPA },
 ]
+=======
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { ArrowLeft, FileWarning, Trash2 } from 'lucide-react'
+import { api } from '../lib/api'
+import EmptyState from '../components/EmptyState'
+import { useToast } from '../context/ToastContext'
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
 export default function DetailView() {
   const { id } = useParams()
   const navigate = useNavigate()
   const toast = useToast()
+<<<<<<< HEAD
   const confirm = useConfirm()
   const [lit, setLit] = useState(null)
   const [error, setError] = useState('')
@@ -35,10 +45,16 @@ export default function DetailView() {
   const [noteDraft, setNoteDraft] = useState('')
   const [noteSaving, setNoteSaving] = useState(false)
   const pdfBlobRef = useRef(null)
+=======
+  const [lit, setLit] = useState(null)
+  const [error, setError] = useState('')
+  const [confirming, setConfirming] = useState(false)
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
   useEffect(() => {
     api
       .getLiterature(id)
+<<<<<<< HEAD
       .then((data) => {
         setLit(data)
         setNoteDraft(data.note || '')
@@ -157,6 +173,12 @@ export default function DetailView() {
     }
   }
 
+=======
+      .then(setLit)
+      .catch((e) => setError(e.message))
+  }, [id])
+
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
   const remove = async () => {
     try {
       await api.deleteLiterature(id)
@@ -168,6 +190,7 @@ export default function DetailView() {
     }
   }
 
+<<<<<<< HEAD
   const knowledge = [
     { icon: BookOpenText, title: '主要内容', body: lit?.mainContent },
     { icon: Microscope, title: '研究方法与操作', body: lit?.methods },
@@ -175,6 +198,8 @@ export default function DetailView() {
     { icon: ListChecks, title: '结论', body: lit?.conclusions },
   ]
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
   return (
     <div className="page page-detail">
       <button type="button" className="back-link" onClick={() => navigate(-1)}>
@@ -187,15 +212,19 @@ export default function DetailView() {
         <article className="detail-card">
           <h1 className="detail-title">{lit.title || '未命名文献'}</h1>
           <div className="detail-chips">
+<<<<<<< HEAD
             <span className={`chip ${lit.isPublic === false ? 'chip-private' : 'chip-public'}`}>
               {lit.isPublic === false ? '私有 · 仅自己可见' : '已公开到社区'}
             </span>
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
             {lit.journal && <span className="chip">{lit.journal}</span>}
             {lit.year && <span className="chip">{lit.year}</span>}
             {lit.doi && <span className="chip">DOI · {lit.doi}</span>}
           </div>
           {lit.authors && <p className="detail-authors">{lit.authors}</p>}
 
+<<<<<<< HEAD
           <div className="detail-actions">
             <Link to={`/workspace/${lit.id}`} className="btn-primary" style={{ textDecoration: 'none' }}>
               <Sparkles size={15} /> 研究工作区
@@ -332,6 +361,15 @@ export default function DetailView() {
             </div>
           </section>
 
+=======
+          {lit.abstractText && (
+            <section className="detail-section">
+              <h3>摘要</h3>
+              <p>{lit.abstractText}</p>
+            </section>
+          )}
+
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
           <footer className="detail-foot">
             <span className="detail-file">
               源文件 · {lit.fileName} · 入库于 {lit.createdAt || '未知时间'}

@@ -50,7 +50,11 @@ services:
       retries: 5
     ports:
       - "19530:19530"
+<<<<<<< HEAD
       # 9091 仅容器内健康检查使用；宿主机映射会与 Windows 保留端口段冲突，故不暴露
+=======
+      - "9091:9091"
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     depends_on:
       - "etcd"
       - "minio"

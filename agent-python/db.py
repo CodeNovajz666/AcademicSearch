@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """MySQL 访问层：pymysql 同步连接。
 
 约定：
@@ -10,13 +11,21 @@
 """
 import json
 from contextlib import contextmanager
+=======
+"""MySQL 访问层：pymysql 同步连接，每次操作独立连接（毕设量级足够）。"""
+import json
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
 import pymysql
 
 import config
 
 
+<<<<<<< HEAD
 def _connect(autocommit=True):
+=======
+def connect():
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     return pymysql.connect(
         host=config.DB_HOST,
         port=config.DB_PORT,
@@ -25,6 +34,7 @@ def _connect(autocommit=True):
         database=config.DB_NAME,
         charset="utf8mb4",
         cursorclass=pymysql.cursors.DictCursor,
+<<<<<<< HEAD
         autocommit=autocommit,
     )
 
@@ -33,6 +43,12 @@ def connect():
     return _connect(autocommit=True)
 
 
+=======
+        autocommit=True,
+    )
+
+
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 def query(sql, args=None):
     with connect() as conn:
         with conn.cursor() as cur:
@@ -52,6 +68,7 @@ def execute(sql, args=None):
             return cur.lastrowid
 
 
+<<<<<<< HEAD
 @contextmanager
 def transaction():
     """单连接单事务：yield 一个 cursor，块正常结束则 commit，异常则 rollback。"""
@@ -138,3 +155,7 @@ def ensure_schema():
                 cur.execute(stmt)
     finally:
         conn.close()
+=======
+def rows_to_json_str(obj):
+    return json.dumps(obj, ensure_ascii=False, default=str)
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4

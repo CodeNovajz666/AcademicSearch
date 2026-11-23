@@ -13,8 +13,11 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+<<<<<<< HEAD
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -30,15 +33,20 @@ import java.util.stream.Collectors;
 public class LiteratureService {
 
     private final LiteratureRepository literatureRepository;
+<<<<<<< HEAD
     private final com.example.literaturesearch.repository.UserLiteratureStateRepository stateRepository;
     private final com.example.literaturesearch.repository.UserRepository userRepository;
     private final com.example.literaturesearch.repository.NoteRepository noteRepository;
     private final VectorService vectorService;
     private final LiteratureProcessingService literatureProcessingService;
+=======
+    private final VectorService vectorService;
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
 
+<<<<<<< HEAD
     // 不加 @Transactional：方法内的 PDF 解析与 embedding 调用（外部 API，可达数十秒）
     // 不应占用数据库事务；唯一写操作 literatureRepository.save 自带事务。
     /** 社区板块（5 个，与前端 categories.js 同源约定；后续扩展再迁数据库表）。 */
@@ -48,10 +56,16 @@ public class LiteratureService {
     public LiteratureResponse uploadLiterature(MultipartFile file, String title, String authors,
                                                String journal, Integer year, String doi, Long userId,
                                                Boolean contributeToCommunity, String category) throws IOException {
+=======
+    @Transactional
+    public LiteratureResponse uploadLiterature(MultipartFile file, String title, String authors,
+                                               String journal, Integer year, String doi, Long userId) throws IOException {
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         String originalFileName = file.getOriginalFilename();
         if (originalFileName == null || !originalFileName.toLowerCase().endsWith(".pdf")) {
             throw new IllegalArgumentException("只支持PDF格式文件");
         }
+<<<<<<< HEAD
         // originalFileName 客户端可控（如 "..\\..\\x.pdf"），必须剥离路径成分，
         // 否则存储路径可被解析到 uploads 目录之外（路径穿越写文件）
         String baseName = originalFileName.replace('\\', '/');
@@ -62,10 +76,15 @@ public class LiteratureService {
 
         // 必须绝对路径：MultipartFile.transferTo 对相对路径会解析到 Tomcat 临时目录，导致 FileNotFoundException
         Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+=======
+
+        Path uploadPath = Paths.get(uploadDir);
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
 
+<<<<<<< HEAD
         String storedFileName = System.currentTimeMillis() + "_" + baseName;
         Path filePath = uploadPath.resolve(storedFileName);
         file.transferTo(filePath.toFile());
@@ -119,6 +138,46 @@ public class LiteratureService {
             }
             throw e;
         }
+=======
+        String storedFileName = System.currentTimeMillis() + "_" + originalFileName;
+        Path filePath = uploadPath.resolve(storedFileName);
+        file.transferTo(filePath.toFile());
+
+        String content = extractTextFromPdf(filePath.toString());
+        
+        String extractedTitle = title;
+        String extractedAuthors = authors;
+        String extractedAbstract = extractAbstract(content);
+        
+        if (extractedTitle == null || extractedTitle.isEmpty()) {
+            extractedTitle = extractTitle(content);
+            if (extractedTitle == null || extractedTitle.isEmpty()) {
+                extractedTitle = originalFileName.replace(".pdf", "");
+            }
+        }
+
+        Literature literature = Literature.builder()
+                .title(extractedTitle)
+                .authors(extractedAuthors)
+                .abstractText(extractedAbstract)
+                .journal(journal)
+                .year(year)
+                .doi(doi)
+                .fileName(originalFileName)
+                .filePath(filePath.toString())
+                .content(content)
+                .userId(userId)
+                .build();
+
+        Literature savedLiterature = literatureRepository.save(literature);
+        
+        if (content != null && !content.isEmpty()) {
+            vectorService.createVectorIndex(savedLiterature.getId(), content);
+        }
+
+        log.info("Literature uploaded: {}", savedLiterature.getTitle());
+        return LiteratureResponse.fromEntity(savedLiterature);
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     }
 
     private String extractTextFromPdf(String filePath) throws IOException {
@@ -128,15 +187,19 @@ public class LiteratureService {
         }
     }
 
+<<<<<<< HEAD
     /**
      * 启发式标题：取首个"非封面横幅"的合理行。
      * ICLR/arXiv 等模板的首行常是 "Published as a conference paper at ICLR 2026"
      * 这类横幅，没有检索价值，应跳过；全部横幅时退回首行兜底。
      */
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     private String extractTitle(String content) {
         if (content == null || content.isEmpty()) {
             return null;
         }
+<<<<<<< HEAD
         String fallback = null;
         for (String raw : content.split("\n")) {
             String line = raw.trim();
@@ -162,6 +225,19 @@ public class LiteratureService {
             .compile("(.*[.!?。！？；;])\\s*\\d{1,3}$", java.util.regex.Pattern.DOTALL);
 
     static String extractAbstract(String content) {
+=======
+        String[] lines = content.split("\n");
+        for (String line : lines) {
+            line = line.trim();
+            if (!line.isEmpty() && line.length() > 5 && line.length() < 200) {
+                return line;
+            }
+        }
+        return null;
+    }
+
+    String extractAbstract(String content) {
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         if (content == null || content.isEmpty()) {
             return null;
         }
@@ -198,6 +274,7 @@ public class LiteratureService {
             abstractText = abstractText.substring(1).trim();
         }
 
+<<<<<<< HEAD
         // 去掉尾部悬挂的节号/页码（". 1"），避免看起来像被截断
         java.util.regex.Matcher matcher = TRAILING_SECTION_NUMBER.matcher(abstractText);
         if (matcher.matches()) {
@@ -227,6 +304,13 @@ public class LiteratureService {
         if (!owner && !isPubliclyVisible(literature)) {
             throw new LiteratureNotFoundException(literature.getId());
         }
+=======
+        if (abstractText.length() > 3000) {
+            abstractText = abstractText.substring(0, 3000);
+        }
+
+        return abstractText;
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     }
 
     public LiteratureResponse getLiteratureById(Long id) {
@@ -235,6 +319,7 @@ public class LiteratureService {
         return LiteratureResponse.fromEntity(literature);
     }
 
+<<<<<<< HEAD
     /** 详情 + 当前用户私有状态（收藏/已读/笔记）+ 上传者昵称。私有文献仅属主可读。 */
     public LiteratureResponse getLiteratureById(Long id, Long userId) {
         LiteratureResponse response = getLiteratureById(id);
@@ -259,12 +344,15 @@ public class LiteratureService {
         return new LiteratureFile(path, literature.getFileName());
     }
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     public List<LiteratureResponse> getAllLiteratures() {
         return literatureRepository.findAll().stream()
                 .map(LiteratureResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
+<<<<<<< HEAD
     /** 全部文献 + 当前用户私有状态（一次批量查询避免 N+1） */
     public List<LiteratureResponse> getAllLiteratures(Long userId) {
         List<LiteratureResponse> responses = getAllLiteratures();
@@ -446,6 +534,8 @@ public class LiteratureService {
         literatureProcessingService.submit(id, null);
     }
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     @Transactional
     public void deleteLiterature(Long id, Long currentUserId) {
         Literature literature = literatureRepository.findById(id)
@@ -456,6 +546,7 @@ public class LiteratureService {
             throw new BusinessException("只能删除自己上传的文献");
         }
 
+<<<<<<< HEAD
         vectorService.deleteVectorsByLiteratureId(id);
         stateRepository.deleteByLiteratureId(id);
         // 笔记插件：文献删除时清掉其下的批注/问题/记录，避免悬空数据
@@ -476,6 +567,17 @@ public class LiteratureService {
             }
         });
 
+=======
+        try {
+            Files.deleteIfExists(Paths.get(literature.getFilePath()));
+        } catch (IOException e) {
+            log.warn("Failed to delete file: {}", literature.getFilePath());
+        }
+        
+        vectorService.deleteVectorsByLiteratureId(id);
+        literatureRepository.delete(literature);
+        
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         log.info("Literature deleted: {}", id);
     }
 }

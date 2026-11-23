@@ -4,7 +4,10 @@ import com.example.literaturesearch.dto.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+<<<<<<< HEAD
 import org.springframework.web.bind.MethodArgumentNotValidException;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -13,6 +16,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+<<<<<<< HEAD
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
@@ -23,6 +27,8 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(400, message));
     }
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     @ExceptionHandler(LiteratureNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleLiteratureNotFoundException(LiteratureNotFoundException ex) {
         log.warn("Literature not found: {}", ex.getMessage());
@@ -51,6 +57,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(400, ex.getMessage()));
     }
 
+<<<<<<< HEAD
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnauthorizedException(UnauthorizedException ex) {
         log.warn("Unauthorized: {}", ex.getMessage());
@@ -66,6 +73,8 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(400, "数据冲突：邮箱可能已被注册，请更换后重试"));
     }
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadCredentialsException(org.springframework.security.authentication.BadCredentialsException ex) {
         log.warn("Bad credentials: {}", ex.getMessage());

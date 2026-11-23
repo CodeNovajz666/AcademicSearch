@@ -1,16 +1,24 @@
 """Milvus 向量库访问层：literature_chunks collection 的建/插/搜/删。
 
+<<<<<<< HEAD
 collection 结构（v2，带可见性标量）：
+=======
+collection 结构：
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
   chunk_id      Int64  主键 auto_id
   literature_id Int64
   chunk_index   Int64
   chunk_text    VarChar(2048)
+<<<<<<< HEAD
   user_id       Int64          （属主；历史无属主为 0）
   is_public     Bool           （是否社区公开；历史 NULL 固化为 True）
   embedding     FloatVector(dim=config.EMBEDDING_DIM)  HNSW + COSINE
 
 存量 v1 collection（无标量字段）自动探测并回退 id 列表过滤；
 运行 migrate_vectors_v2.py 重建后自动切回标量过滤。
+=======
+  embedding     FloatVector(dim=1536)  HNSW + COSINE
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 """
 from functools import lru_cache
 
@@ -19,10 +27,16 @@ from pymilvus import DataType, MilvusClient
 import config
 
 COLLECTION = "literature_chunks"
+<<<<<<< HEAD
 
 _client: MilvusClient | None = None
 # None=未探测；True/False=collection 是否带标量字段（v2/v1）
 _scalar_supported: bool | None = None
+=======
+EMBEDDING_DIM = 1536
+
+_client: MilvusClient | None = None
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 
 
 def client() -> MilvusClient:
@@ -32,6 +46,7 @@ def client() -> MilvusClient:
     return _client
 
 
+<<<<<<< HEAD
 def scalar_supported() -> bool:
     """collection 是否支持 user_id/is_public 标量过滤（惰性探测并缓存）。"""
     ensure_collection()
@@ -60,16 +75,24 @@ def ensure_collection() -> None:
         return
     if client().has_collection(COLLECTION):
         _probe_scalar()
+=======
+def ensure_collection() -> None:
+    if client().has_collection(COLLECTION):
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         return
     schema = client().create_schema(auto_id=True, enable_dynamic_field=False)
     schema.add_field("chunk_id", DataType.INT64, is_primary=True)
     schema.add_field("literature_id", DataType.INT64)
     schema.add_field("chunk_index", DataType.INT64)
     schema.add_field("chunk_text", DataType.VARCHAR, max_length=2048)
+<<<<<<< HEAD
     # v2 标量字段：可见性/属主直接在 Milvus 内过滤，替代"MySQL 全量 id 拼长表达式"
     schema.add_field("user_id", DataType.INT64)
     schema.add_field("is_public", DataType.BOOL)
     schema.add_field("embedding", DataType.FLOAT_VECTOR, dim=config.EMBEDDING_DIM)
+=======
+    schema.add_field("embedding", DataType.FLOAT_VECTOR, dim=EMBEDDING_DIM)
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     index_params = client().prepare_index_params()
     index_params.add_index(
         field_name="embedding",
@@ -80,6 +103,7 @@ def ensure_collection() -> None:
     client().create_collection(
         COLLECTION, schema=schema, index_params=index_params
     )
+<<<<<<< HEAD
     _scalar_supported = True
 
 
@@ -102,16 +126,27 @@ def insert_chunks(
         return 0
     ensure_collection()
     with_scalars = _scalar_supported and user_id is not None
+=======
+
+
+def insert_chunks(literature_id: int, chunks: list[str], vectors: list[list[float]]) -> int:
+    if not chunks:
+        return 0
+    ensure_collection()
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     rows = [
         {
             "literature_id": literature_id,
             "chunk_index": i,
             "chunk_text": text[:2048],
+<<<<<<< HEAD
             **(
                 {"user_id": int(user_id), "is_public": bool(is_public)}
                 if with_scalars
                 else {}
             ),
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
             "embedding": vec,
         }
         for i, (text, vec) in enumerate(zip(chunks, vectors))
@@ -120,6 +155,7 @@ def insert_chunks(
     return result.get("insert_count", len(rows)) if isinstance(result, dict) else len(rows)
 
 
+<<<<<<< HEAD
 def sync_visibility(literature_id: int, user_id: int | None, is_public: bool) -> bool:
     """可见性变更同步：向量整体取出按新标量重插（不重新 embedding）。
 
@@ -154,15 +190,26 @@ def search(query_vector: list[float], top_k: int = 5, filter_expr: str | None = 
     if client().get_collection_stats(COLLECTION).get("row_count", 0) == 0:
         return []
     kwargs = dict(
+=======
+def search(query_vector: list[float], top_k: int = 5) -> list[dict]:
+    """向量检索：返回 [{literatureId, chunkText, score}]。"""
+    ensure_collection()
+    if client().get_collection_stats(COLLECTION).get("row_count", 0) == 0:
+        return []
+    results = client().search(
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         collection_name=COLLECTION,
         data=[query_vector],
         limit=max(1, min(top_k, 50)),
         output_fields=["literature_id", "chunk_text"],
         search_params={"metric_type": "COSINE", "params": {"ef": 64}},
     )
+<<<<<<< HEAD
     if filter_expr:
         kwargs["filter"] = filter_expr
     results = client().search(**kwargs)
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     hits = []
     for hit in results[0]:
         entity = hit.get("entity", {})

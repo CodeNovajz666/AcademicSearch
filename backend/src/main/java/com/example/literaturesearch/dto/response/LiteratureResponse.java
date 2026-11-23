@@ -21,6 +21,7 @@ public class LiteratureResponse {
     private Integer year;
     private String doi;
     private String fileName;
+<<<<<<< HEAD
     private String processStatus;
     private String mainContent;
     private String methods;
@@ -37,6 +38,8 @@ public class LiteratureResponse {
     private Boolean isPublic;
     /** 社区板块（computer-science/engineering/science/medicine/social-science） */
     private String category;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     private LocalDateTime createdAt;
 
     public static LiteratureResponse fromEntity(Literature literature) {
@@ -49,6 +52,7 @@ public class LiteratureResponse {
                 .year(literature.getYear())
                 .doi(literature.getDoi())
                 .fileName(literature.getFileName())
+<<<<<<< HEAD
                 // 历史数据无状态字段，视为已就绪
                 .processStatus(literature.getProcessStatus() == null
                         ? "READY" : literature.getProcessStatus())
@@ -72,4 +76,9 @@ public class LiteratureResponse {
         setNote(state.getNote());
         return this;
     }
+=======
+                .createdAt(literature.getCreatedAt())
+                .build();
+    }
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 }

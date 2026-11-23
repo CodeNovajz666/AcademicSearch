@@ -11,17 +11,23 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+<<<<<<< HEAD
 import java.util.UUID;
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
 import java.util.function.Function;
 
 @Component
 public class JwtUtil {
 
+<<<<<<< HEAD
     public static final String TYPE_ACCESS = "access";
     public static final String TYPE_REFRESH = "refresh";
 
     private static final String CLAIM_TYPE = "type";
 
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
     @Value("${jwt.secret}")
     private String secret;
 
@@ -63,17 +69,24 @@ public class JwtUtil {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+<<<<<<< HEAD
         claims.put(CLAIM_TYPE, TYPE_ACCESS);
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         return createToken(claims, subjectOf(userDetails), expiration);
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+<<<<<<< HEAD
         claims.put(CLAIM_TYPE, TYPE_REFRESH);
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
         return createToken(claims, subjectOf(userDetails), refreshExpiration);
     }
 
     /**
+<<<<<<< HEAD
      * 令牌类型。历史令牌（类型区分引入前签发）没有该 claim，返回 null——
      * 调用方按 access 处理以兼容存量登录态，refresh 端点同样接受 null。
      */
@@ -87,6 +100,8 @@ public class JwtUtil {
     }
 
     /**
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
      * token 主题统一使用 email：UserDetails.getUsername() 返回的是注册用户名，
      * 而 JwtAuthenticationFilter 按邮箱查询用户，两者不一致会导致认证 403。
      */
@@ -100,8 +115,11 @@ public class JwtUtil {
         return Jwts.builder()
                 .claims(claims)
                 .subject(subject)
+<<<<<<< HEAD
                 // jti：登出吊销按该 id 拉黑 refresh 令牌
                 .id(UUID.randomUUID().toString())
+=======
+>>>>>>> b6fcf7be5afab621f5f617923f0784264c8a43e4
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(getSigningKey())
