@@ -7,11 +7,11 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: process.env.VITE_JAVA_TARGET || 'http://localhost:8080',
         changeOrigin: true
       },
       '/agent-api': {
-        target: 'http://localhost:8000',
+        target: process.env.VITE_AGENT_TARGET || 'http://localhost:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/agent-api/, '')
       }

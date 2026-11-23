@@ -1,10 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Download, FileText, History, Pencil, Plus, SendHorizontal, Sparkles, Square, Trash2 } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import {
+  BrainCircuit, Check, ChevronDown, CornerDownRight, Download, FileText, History, Pencil, Play,
+  Plus, SendHorizontal, Sparkles, Square, Trash2,
+} from 'lucide-react'
 import { api } from '../lib/api'
+import { downloadBlob } from '../lib/download'
+import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
+import { useConfirm } from '../context/ConfirmContext'
 
 const WELCOME =
-  '你好，我是 AI 研究副驾。我身后是一个 Agent 团队，可为你：\n- 检索文献库，回答研究问题\n- 精读论文，提炼方法与结论\n- 中英文互译、结构化总结\n每条回答附带可溯源的参考文献与完整执行轨迹。'
+  '你好，我是 AI 研究副驾。我身后是一个 Agent 团队，可为你：\n-  检索文献库，回答研究问题\n- 精读论文，提炼方法与结论\n- 中英文互译、结构化总结\n每条回答附带可溯源的参考文献与完整执行轨迹。'
 
 const AGENT_LABEL = {
   orchestrator: '协调者',
@@ -84,13 +91,47 @@ function stepText(step) {
   return `${TOOL_LABEL[step.toolName] || step.toolName} 完成${seconds}`
 }
 
+const STEP_ICONS = {
+  agent_start: Play,
+  thinking: BrainCircuit,
+  tool_call: CornerDownRight,
+  tool_result: Check,
+}
+
+/** 轨迹行：思考步骤默认收起为两行，点击展开看完整思维链 */
 function StepRow({ step }) {
-  const icon =
-    step.type === 'agent_start' ? '◆' : step.type === 'thinking' ? '✦' : step.type === 'tool_call' ? '→' : '✓'
+  const [expanded, setExpanded] = useState(false)
+  const Icon = STEP_ICONS[step.type] || CornerDownRight
+
+  if (step.type === 'thinking') {
+    return (
+      <div className={`cp-step cp-step-thinking${expanded ? ' expanded' : ''}`}>
+        <span className="cp-step-ic"><Icon size={10} strokeWidth={2} /></span>
+        <div className="cp-step-main">
+          <button
+            type="button"
+            className="cp-thinking"
+            onClick={() => setExpanded((v) => !v)}
+            title={expanded ? '收起思考' : '展开完整思考'}
+          >
+            <span className="cp-thinking-label">思考</span>
+            <span className="cp-thinking-text">{step.summary || '（模型未输出思考内容）'}</span>
+            <ChevronDown size={12} strokeWidth={2} className="cp-thinking-chev" />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={`cp-step cp-step-${step.type}`}>
-      <span className="cp-step-ic">{icon}</span>
-      <span className="cp-step-tx">{stepText(step)}</span>
+      <span className="cp-step-ic"><Icon size={10} strokeWidth={2} /></span>
+      <div className="cp-step-main">
+        <span className="cp-step-tx">{stepText(step)}</span>
+        {step.type === 'tool_call' && step.summary && (
+          <code className="cp-step-args" title={step.summary}>{step.summary}</code>
+        )}
+      </div>
     </div>
   )
 }
@@ -117,6 +158,11 @@ function fmtTime(value) {
 }
 
 export default function CopilotPanel() {
+  const { user } = useAuth()
+  const toast = useToast()
+  const confirm = useConfirm()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [messages, setMessages] = useState([{ role: 'ai', text: WELCOME, refs: [], steps: [], open: false }])
   const [conversationId, setConversationId] = useState(null)
   const [input, setInput] = useState('')
@@ -133,6 +179,10 @@ export default function CopilotPanel() {
     if (el) el.scrollTop = el.scrollHeight
   }, [messages, thinking])
 
+  // 组件卸载（如 auth:expired 跳转登录页）时中止进行中的 SSE 流，
+  // 避免后台继续传输并对已卸载组件 setState
+  useEffect(() => () => { abortRef.current?.abort() }, [])
+
   const updateLast = (fn) =>
     setMessages((m) => {
       if (!m.length) return m
@@ -141,9 +191,18 @@ export default function CopilotPanel() {
       return copy
     })
 
+  /** 游客操作守卫：提示登录并跳转，登录后回到当前页 */
+  const requireLogin = (feature) => {
+    if (user) return true
+    toast(`请先登录后再使用${feature}`)
+    navigate('/login', { state: { from: location }, replace: true })
+    return false
+  }
+
   const send = async () => {
     const question = input.trim()
     if (!question || thinking) return
+    if (!requireLogin('AI 问答')) return
     setMessages((m) => [
       ...m,
       { role: 'user', text: question, refs: [] },
@@ -157,7 +216,7 @@ export default function CopilotPanel() {
     abortRef.current = controller
 
     try {
-      await api.agentChat({
+      const ended = await api.agentChat({
         conversationId,
         question,
         signal: controller.signal,
@@ -188,6 +247,16 @@ export default function CopilotPanel() {
           }
         },
       })
+      // 静默断流：流正常结束但没有 final/error 收尾（网关超时/后端崩溃），
+      // 必须复位 streaming 并提示，否则光标永远闪烁
+      if (!ended) {
+        updateLast((msg) => ({
+          ...msg,
+          text: msg.text ? `${msg.text}\n\n（连接中断，回答可能不完整）` : '（连接中断，请重试）',
+          streaming: false,
+          open: false,
+        }))
+      }
     } catch (e) {
       if (e.name === 'AbortError') {
         updateLast((msg) => ({
@@ -219,6 +288,7 @@ export default function CopilotPanel() {
   }
 
   const toggleHistory = async () => {
+    if (!requireLogin('历史会话')) return
     const next = !historyOpen
     setHistoryOpen(next)
     if (next) {
@@ -252,11 +322,19 @@ export default function CopilotPanel() {
   }
 
   const removeConversation = async (id) => {
+    const ok = await confirm('删除后该会话的全部消息与执行轨迹将不可恢复。', {
+      title: '删除会话',
+      confirmText: '删除',
+      danger: true,
+    })
+    if (!ok) return
     try {
       await api.agentDeleteConversation(id)
       setConversations((list) => list.filter((c) => c.id !== id))
       if (id === conversationId) newChat()
-    } catch {}
+    } catch (e) {
+      toast(`删除失败：${e.message}`, 'error')
+    }
   }
 
   const commitRename = async (id) => {
@@ -267,7 +345,9 @@ export default function CopilotPanel() {
     try {
       const updated = await api.agentRenameConversation(id, title)
       setConversations((list) => list.map((c) => (c.id === id ? updated : c)))
-    } catch {}
+    } catch (e) {
+      toast(`重命名失败：${e.message}`, 'error')
+    }
   }
 
   const exportMarkdown = () => {
@@ -299,12 +379,8 @@ export default function CopilotPanel() {
       }
     })
     const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${title.replace(/[\\/:*?"<>|]/g, '_')}.md`
-    link.click()
-    URL.revokeObjectURL(url)
+    // 统一走 downloadBlob：挂载 <a>（Firefox 兼容）+ 回收 objectURL
+    downloadBlob(blob, `${title.replace(/[\\/:*?"<>|]/g, '_')}.md`)
   }
 
   return (
@@ -416,7 +492,7 @@ export default function CopilotPanel() {
                         )
                       }
                     >
-                      {msg.open ? '收起执行轨迹' : `执行轨迹 · ${msg.steps.length} 步`}
+                      {msg.open ? '收起思维链路' : `思维链路 · ${msg.steps.length} 步`}
                     </button>
                     {msg.open && (
                       <div className="cp-steps">

@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { BookOpen, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { BookOpen, Eye, EyeOff, Loader2, RefreshCw } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { api } from '../lib/api'
+import { safeFromTarget } from '../lib/navigation'
 
 function pwdScore(pwd) {
   let score = 0
-  if (pwd.length >= 6) score++
+  if (pwd.length >= 8) score++ // 与提交校验同口径（<8 直接拦截）
   if (pwd.length >= 10) score++
   if (/[a-zA-Z]/.test(pwd) && /\d/.test(pwd)) score++
   if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++
@@ -19,6 +21,7 @@ const STRENGTH_CLASS = ['', 'weak', 'mid', 'strong']
 export default function RegisterView() {
   const { register } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -26,10 +29,25 @@ export default function RegisterView() {
   const [showPwd, setShowPwd] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [captcha, setCaptcha] = useState(null)
+  const [captchaCode, setCaptchaCode] = useState('')
 
   const strength = useMemo(() => pwdScore(password), [password])
   const usernameInvalid = username.length > 0 && (username.trim().length < 2 || username.length > 30)
   const confirmInvalid = confirm.length > 0 && confirm !== password
+
+  const loadCaptcha = useCallback(async () => {
+    try {
+      setCaptcha(await api.getCaptcha())
+    } catch {
+      setCaptcha(null)
+    }
+    setCaptchaCode('')
+  }, [])
+
+  useEffect(() => {
+    loadCaptcha()
+  }, [loadCaptcha])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -38,21 +56,34 @@ export default function RegisterView() {
       setError('用户名需为 2~30 个字符')
       return
     }
-    if (password.length < 6) {
-      setError('密码至少需要 6 位')
+    if (password.length < 8) {
+      setError('密码至少需要 8 位')
       return
     }
     if (password !== confirm) {
       setError('两次输入的密码不一致')
       return
     }
+    if (!captcha || !captchaCode.trim()) {
+      setError('请输入图形验证码')
+      return
+    }
     setBusy(true)
     setError('')
     try {
-      await register({ email, username: username.trim(), password })
-      navigate('/', { replace: true })
+      await register({
+        email,
+        username: username.trim(),
+        password,
+        captchaId: captcha.captchaId,
+        captchaCode: captchaCode.trim(),
+      })
+      // 注册成功回跳原页面（与登录行为一致；游客从检索页/工作区跳来时不丢上下文）
+      navigate(safeFromTarget(location.state?.from) || '/', { replace: true })
     } catch (ex) {
       setError(ex.message)
+      // 验证码一次性且连错作废，任何注册失败后都重新取一张
+      loadCaptcha()
       setBusy(false)
     }
   }
@@ -99,7 +130,7 @@ export default function RegisterView() {
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="至少 6 位，建议字母 + 数字"
+              placeholder="至少 8 位，建议字母 + 数字"
             />
             <button
               type="button"
@@ -132,6 +163,40 @@ export default function RegisterView() {
             placeholder="再次输入密码"
           />
           {confirmInvalid && <p className="field-hint">两次输入的密码不一致</p>}
+        </div>
+        <div className="field">
+          <label htmlFor="reg-captcha">图形验证码</label>
+          <div className="captcha-row">
+            <input
+              id="reg-captcha"
+              required
+              value={captchaCode}
+              maxLength={4}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(e) => setCaptchaCode(e.target.value)}
+              placeholder="输入右侧字符"
+            />
+            {captcha?.image ? (
+              <img
+                className="captcha-img"
+                src={captcha.image}
+                alt="图形验证码，点击刷新"
+                title="看不清？点击刷新"
+                onClick={loadCaptcha}
+              />
+            ) : (
+              <button
+                type="button"
+                className="captcha-img captcha-retry"
+                onClick={loadCaptcha}
+                aria-label="加载验证码"
+                title="加载验证码"
+              >
+                <RefreshCw size={16} strokeWidth={1.8} />
+              </button>
+            )}
+          </div>
         </div>
         {error && <p className="form-error">{error}</p>}
         <button type="submit" className="btn-primary auth-submit" disabled={busy}>

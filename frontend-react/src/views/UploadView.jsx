@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, FileUp, Loader2, X } from 'lucide-react'
+import { FileText, FileUp, Globe2, Loader2, X } from 'lucide-react'
 import { api } from '../lib/api'
+import { CATEGORIES } from '../lib/categories'
 import { useToast } from '../context/ToastContext'
+import { useConfirm } from '../context/ConfirmContext'
 
 const EMPTY_META = { title: '', authors: '', journal: '', year: '', doi: '' }
 const MAX_FILE_SIZE = 50 * 1024 * 1024
@@ -12,7 +14,10 @@ export default function UploadView() {
   const [drag, setDrag] = useState(false)
   const [meta, setMeta] = useState(EMPTY_META)
   const [busy, setBusy] = useState(false)
+  const [toCommunity, setToCommunity] = useState(false)
+  const [category, setCategory] = useState('')
   const toast = useToast()
+  const confirm = useConfirm()
   const navigate = useNavigate()
   const inputRef = useRef(null)
 
@@ -31,15 +36,29 @@ export default function UploadView() {
 
   const submit = async () => {
     if (!file || busy) return
+    if (toCommunity && !category) {
+      toast('贡献到社区时请选择一个板块', 'error')
+      return
+    }
+    // 勾选贡献时上传即公开（全员可检索阅读），提交前二次确认
+    if (toCommunity) {
+      const ok = await confirm(
+        '这篇文献将以社区公开方式上传：所有登录用户都可以在社区中检索和阅读它的全文与解析内容。',
+        { title: '贡献到社区总知识库', confirmText: '上传并公开' }
+      )
+      if (!ok) return
+    }
     setBusy(true)
     const fd = new FormData()
     fd.append('file', file)
+    fd.append('isPublic', toCommunity ? 'true' : 'false')
+    if (category) fd.append('category', category)
     Object.entries(meta).forEach(([k, v]) => {
       if (v) fd.append(k, v)
     })
     try {
       const lit = await api.uploadLiterature(fd)
-      toast('上传成功，向量索引已建立')
+      toast(toCommunity ? '上传成功，已贡献到社区总知识库' : '上传成功，文献保存在你的私有知识库')
       navigate(`/literature/${lit.id}`)
     } catch (e) {
       toast(e.message, 'error')
@@ -54,7 +73,7 @@ export default function UploadView() {
       <header className="section-head">
         <div>
           <h2 className="section-title">上传文献</h2>
-          <p className="section-sub">上传 PDF 后系统自动提取元数据、切分文本并建立向量索引</p>
+          <p className="section-sub">上传 PDF 后系统在后台自动提取元数据、建立向量索引并抽取知识要点</p>
         </div>
       </header>
 
@@ -120,11 +139,36 @@ export default function UploadView() {
           <label htmlFor="up-year">年份</label>
           <input id="up-year" value={meta.year} onChange={set('year')} placeholder="如 2025" inputMode="numeric" />
         </div>
-        <div className="field">
+        <div className="field field-full">
           <label htmlFor="up-doi">DOI</label>
           <input id="up-doi" value={meta.doi} onChange={set('doi')} placeholder="可选" />
         </div>
       </div>
+
+      <label className="community-check">
+        <input
+          type="checkbox"
+          checked={toCommunity}
+          onChange={(e) => setToCommunity(e.target.checked)}
+        />
+        <Globe2 size={15} />
+        <span>
+          贡献到社区总知识库
+          <small>勾选后所有登录用户都可检索和阅读这篇文献；不勾选则仅自己可见，随时可在详情页更改</small>
+        </span>
+      </label>
+
+      {toCommunity && (
+        <div className="field board-field">
+          <label htmlFor="up-category">所属板块 <b className="req">*</b></label>
+          <select id="up-category" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option value="">请选择板块…</option>
+            {CATEGORIES.map((c) => (
+              <option key={c.key} value={c.key}>{c.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <button type="button" className="btn-primary upload-submit" onClick={submit} disabled={!file || busy}>
         {busy ? (

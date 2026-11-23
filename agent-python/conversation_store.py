@@ -13,6 +13,14 @@ class NotFound(Exception):
     pass
 
 
+def get_literature_brief(literature_id):
+    """文献简要信息（工作区上下文注入用）：标题 + 可见性，不存在返回 None。"""
+    return db.query_one(
+        "SELECT id, title, user_id, is_public FROM literature WHERE id = %s",
+        (int(literature_id),),
+    )
+
+
 def _now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -70,13 +78,17 @@ def delete(user_id, conversation_id):
     )
     if not row:
         raise NotFound("会话不存在或无权访问")
-    db.execute(
-        "DELETE FROM agent_step WHERE message_id IN "
-        "(SELECT id FROM (SELECT id FROM agent_message WHERE conversation_id = %s) t)",
-        (conversation_id,),
-    )
-    db.execute("DELETE FROM agent_message WHERE conversation_id = %s", (conversation_id,))
-    db.execute("DELETE FROM conversation WHERE id = %s", (conversation_id,))
+    # 级联删除放同一事务：避免中途失败留下孤儿消息/轨迹
+    with db.transaction() as cur:
+        cur.execute(
+            "DELETE FROM agent_step WHERE message_id IN "
+            "(SELECT id FROM (SELECT id FROM agent_message WHERE conversation_id = %s) t)",
+            (conversation_id,),
+        )
+        cur.execute(
+            "DELETE FROM agent_message WHERE conversation_id = %s", (conversation_id,)
+        )
+        cur.execute("DELETE FROM conversation WHERE id = %s", (conversation_id,))
 
 
 def _step_map(step):
@@ -143,41 +155,43 @@ def history_messages(conversation_id):
     ]
 
 
-def save_turn(conversation_id, question, answer, events, references, stats):
-    """写入一轮对话（用户问题 + 助手回答 + 执行轨迹），返回助手消息 id。"""
-    db.execute(
+def save_user_message(conversation_id, question):
+    """用户消息即时落库：即使本轮执行失败/被中断，历史会话也看得到提问。"""
+    return db.execute(
         "INSERT INTO agent_message (conversation_id, role, content, created_at) VALUES (%s, %s, %s, %s)",
         (conversation_id, "user", question, _now()),
     )
-    assistant_id = db.execute(
-        "INSERT INTO agent_message (conversation_id, role, content, references_json, stats_json, created_at) "
-        "VALUES (%s, %s, %s, %s, %s, %s)",
-        (
-            conversation_id,
-            "assistant",
-            answer,
-            json.dumps(references, ensure_ascii=False) if references else None,
-            json.dumps(stats, ensure_ascii=False) if stats else None,
-            _now(),
-        ),
-    )
-    for event in events:
-        content = event.get("content") or event.get("summary") or ""
-        db.execute(
-            "INSERT INTO agent_step (message_id, agent_name, step_index, step_type, tool_name, content, duration_ms, created_at) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-            (
-                assistant_id,
-                event.get("agent") or "orchestrator",
-                event.get("stepIndex") or 0,
-                event.get("type"),
-                event.get("toolName"),
-                _truncate(content, 2000),
-                event.get("durationMs"),
-                _now(),
-            ),
+
+
+def save_assistant_message(conversation_id, answer, events, references, stats):
+    """助手回答 + 执行轨迹 + 会话时间戳，单事务写入，返回助手消息 id。"""
+    references_json = json.dumps(references, ensure_ascii=False) if references else None
+    stats_json = json.dumps(stats, ensure_ascii=False) if stats else None
+    now = _now()
+    with db.transaction() as cur:
+        cur.execute(
+            "INSERT INTO agent_message (conversation_id, role, content, references_json, stats_json, created_at) "
+            "VALUES (%s, %s, %s, %s, %s, %s)",
+            (conversation_id, "assistant", answer, references_json, stats_json, now),
         )
-    db.execute(
-        "UPDATE conversation SET updated_at = %s WHERE id = %s", (_now(), conversation_id)
-    )
+        assistant_id = cur.lastrowid
+        for event in events:
+            content = event.get("content") or event.get("summary") or ""
+            cur.execute(
+                "INSERT INTO agent_step (message_id, agent_name, step_index, step_type, tool_name, content, duration_ms, created_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                (
+                    assistant_id,
+                    event.get("agent") or "orchestrator",
+                    event.get("stepIndex") or 0,
+                    event.get("type"),
+                    event.get("toolName"),
+                    _truncate(content, 2000),
+                    event.get("durationMs"),
+                    now,
+                ),
+            )
+        cur.execute(
+            "UPDATE conversation SET updated_at = %s WHERE id = %s", (now, conversation_id)
+        )
     return assistant_id

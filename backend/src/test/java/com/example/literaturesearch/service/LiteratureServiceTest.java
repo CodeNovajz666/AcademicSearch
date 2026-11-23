@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class LiteratureServiceTest {
 
-    private final LiteratureService literatureService = new LiteratureService(null, null);
+    private final LiteratureService literatureService = new LiteratureService(null, null, null, null, null);
 
     @Test
     void extractAbstract_nullOrEmpty_returnsNull() {
@@ -37,5 +37,26 @@ class LiteratureServiceTest {
     void extractAbstract_stopsAtIntroductionWhenNoKeywords() {
         String content = "Title\nAbstract Deep learning models improve retrieval.\nIntroduction\nIn this paper";
         assertEquals("Deep learning models improve retrieval.", literatureService.extractAbstract(content));
+    }
+
+    @Test
+    void extractAbstract_stripsTrailingSectionNumber() {
+        // "1 Introduction" 的节号残留在摘要末尾，视觉上像被截断，应剥离
+        String content = "Title\nAbstract Our findings hold in various environments.\n1 Introduction\nWe study...";
+        assertEquals("Our findings hold in various environments.", literatureService.extractAbstract(content));
+    }
+
+    @Test
+    void extractAbstract_realAbstractEndingInNumber_notStripped() {
+        // 摘要末尾本身以数字结束（超过 3 位或无句末标点）不受剥离影响
+        String content = "Title\nAbstract The dataset contains 2023 samples for evaluation.";
+        assertEquals("The dataset contains 2023 samples for evaluation.", literatureService.extractAbstract(content));
+    }
+
+    @Test
+    void extractAbstract_longText_notTruncated() {
+        // 已取消字数限制：无 keywords/introduction 标记的长文本也完整保留
+        String content = "Title\nAbstract " + "x".repeat(9000);
+        assertEquals(9000, literatureService.extractAbstract(content).length());
     }
 }

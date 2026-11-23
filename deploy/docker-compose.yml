@@ -1,0 +1,59 @@
+# AcademicSearch 生产编排：前端(80) / Java(8080) / Python Agent(8000)
+# MySQL 与 Milvus 使用外部实例（宿主机或云服务），通过 .env 提供连接信息
+# 用法：cd deploy && docker compose up -d --build
+services:
+  frontend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - agent
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+    environment:
+      # 复用项目根目录 .env（DB_*/DASHSCOPE_API_KEY/JWT_SECRET 等）
+      DB_HOST: ${DB_HOST:-host.docker.internal}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-example_db}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required}
+      MILVUS_URI: ${MILVUS_URI:-http://host.docker.internal:19530}
+      MILVUS_EMBEDDING_DIM: ${MILVUS_EMBEDDING_DIM:-1536}
+      # 统一入口后前后端同源，CORS 白名单保留默认即可
+      APP_CORS_ALLOWEDORIGINS: http://localhost,http://127.0.0.1
+    volumes:
+      # 上传文件持久化：容器重建不丢
+      - backend-uploads:/app/uploads
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  agent:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.agent
+    environment:
+      DB_HOST: ${DB_HOST:-host.docker.internal}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-example_db}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required}
+      MILVUS_URI: ${MILVUS_URI:-http://host.docker.internal:19530}
+      MILVUS_EMBEDDING_DIM: ${MILVUS_EMBEDDING_DIM:-1536}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  backend-uploads:

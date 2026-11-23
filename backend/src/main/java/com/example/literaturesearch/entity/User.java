@@ -34,6 +34,18 @@ public class User implements UserDetails {
     @Column(nullable = false, length = 255)
     private String password;
 
+    /** 用户自备 DashScope API Key（明文存储，按用户要求不做掩码/加密）；为空时回退到服务器默认 Key */
+    @Column(name = "dashscope_api_key", length = 512)
+    private String dashscopeApiKey;
+
+    /** 协调者模型覆盖项，为空时使用服务器默认 ORCHESTRATOR_MODEL */
+    @Column(name = "chat_model", length = 64)
+    private String chatModel;
+
+    /** 子智能体模型覆盖项，为空时使用服务器默认 SUBAGENT_MODEL */
+    @Column(name = "subagent_model", length = 64)
+    private String subagentModel;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.emptyList();

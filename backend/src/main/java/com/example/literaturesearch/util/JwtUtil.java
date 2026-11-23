@@ -11,10 +11,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Component
 public class JwtUtil {
+
+    public static final String TYPE_ACCESS = "access";
+    public static final String TYPE_REFRESH = "refresh";
+
+    private static final String CLAIM_TYPE = "type";
 
     @Value("${jwt.secret}")
     private String secret;
@@ -57,12 +63,27 @@ public class JwtUtil {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put(CLAIM_TYPE, TYPE_ACCESS);
         return createToken(claims, subjectOf(userDetails), expiration);
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put(CLAIM_TYPE, TYPE_REFRESH);
         return createToken(claims, subjectOf(userDetails), refreshExpiration);
+    }
+
+    /**
+     * 令牌类型。历史令牌（类型区分引入前签发）没有该 claim，返回 null——
+     * 调用方按 access 处理以兼容存量登录态，refresh 端点同样接受 null。
+     */
+    public String extractType(String token) {
+        return extractClaim(token, claims -> claims.get(CLAIM_TYPE, String.class));
+    }
+
+    /** 令牌唯一 id（jti）。历史令牌没有该 claim 返回 null——登出吊销只对有 jti 的令牌生效。 */
+    public String extractJti(String token) {
+        return extractClaim(token, Claims::getId);
     }
 
     /**
@@ -79,6 +100,8 @@ public class JwtUtil {
         return Jwts.builder()
                 .claims(claims)
                 .subject(subject)
+                // jti：登出吊销按该 id 拉黑 refresh 令牌
+                .id(UUID.randomUUID().toString())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(getSigningKey())

@@ -19,28 +19,28 @@ public class RagService {
     private final DashScopeService dashScopeService;
 
     public RagAnswerResponse query(String question, int topK) {
-        List<SearchResult> searchResults = vectorService.search(question, topK);
-        
-        if (searchResults.isEmpty()) {
+        return query(question, topK, null);
+    }
+
+    /** ownerScope 非空 = 只在"我的知识库"范围内检索。 */
+    public RagAnswerResponse query(String question, int topK, Long ownerScope) {
+        VectorService.RetrievalResult retrieval = vectorService.retrieve(question, topK, ownerScope);
+
+        if (retrieval.results().isEmpty()) {
             return RagAnswerResponse.builder()
                     .answer("未找到相关文献，无法回答该问题。")
                     .references(List.of())
                     .build();
         }
 
-        List<Long> literatureIds = searchResults.stream()
-                .map(r -> r.getLiterature().getId())
-                .collect(Collectors.toList());
+        String answer = dashScopeService.chat(question, retrieval.context());
 
-        String context = vectorService.getContextForLiterature(literatureIds);
-        String answer = dashScopeService.chat(question, context);
-
-        List<LiteratureResponse> references = searchResults.stream()
+        List<LiteratureResponse> references = retrieval.results().stream()
                 .map(SearchResult::getLiterature)
                 .collect(Collectors.toList());
 
         log.info("RAG query completed, found {} relevant literatures", references.size());
-        
+
         return RagAnswerResponse.builder()
                 .answer(answer)
                 .references(references)

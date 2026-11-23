@@ -1,0 +1,16 @@
+# Java 后端：maven 编译 → JRE 21 运行
+# 构建上下文为项目根目录：docker build -f deploy/Dockerfile.backend .
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /app
+COPY backend/pom.xml ./
+RUN mvn -B dependency:go-offline
+COPY backend/src ./src
+RUN mvn -B package -DskipTests
+
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY --from=build /app/target/literature-search-1.0.0.jar app.jar
+# 上传文件目录（生产请挂载卷持久化）
+VOLUME /app/uploads
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]

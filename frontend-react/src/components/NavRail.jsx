@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { BookOpen, Home, Library, LogOut, Moon, PlusCircle, Search, Sun } from 'lucide-react'
+import { BookOpen, Home, Leaf, Library, LogIn, LogOut, Moon, NotebookPen, PlusCircle, Search, Settings2, Sun, Users } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 
 const items = [
   { to: '/', icon: Home, label: '首页', end: true },
   { to: '/search', icon: Search, label: '检索' },
-  { to: '/library', icon: Library, label: '文献库' },
+  { to: '/library', icon: Library, label: '我的文献库' },
+  { to: '/notes', icon: NotebookPen, label: '笔记' },
+  { to: '/community', icon: Users, label: '社区' },
   { to: '/upload', icon: PlusCircle, label: '上传' },
 ]
 
@@ -48,14 +50,31 @@ export default function NavRail() {
         ))}
       </div>
       <div className="rail-foot">
+        {user && (
+          <NavLink
+            to="/settings"
+            className={({ isActive }) => `rail-item${isActive ? ' is-active' : ''}`}
+            aria-label="设置"
+          >
+            <Settings2 size={19} strokeWidth={1.8} />
+            <span className="rail-tip">设置</span>
+          </NavLink>
+        )}
+        {!user && (
+          <Link to="/login" className="rail-item rail-login-btn" aria-label="登录">
+            <LogIn size={19} strokeWidth={1.8} />
+            <span className="rail-tip">登录</span>
+          </Link>
+        )}
         <button
           type="button"
           className="rail-item rail-theme-btn"
           onClick={toggle}
-          aria-label="切换深浅主题"
+          aria-label="切换主题：深色 / 浅色 / 护眼"
         >
-          {theme === 'dark' ? <Sun size={19} strokeWidth={1.8} /> : <Moon size={19} strokeWidth={1.8} />}
-          <span className="rail-tip">{theme === 'dark' ? '浅色模式' : '深色模式'}</span>
+          {/* 图标与提示显示“下一个主题”：深色 → 浅色 → 护眼 → 深色 */}
+          {theme === 'dark' ? <Sun size={19} strokeWidth={1.8} /> : theme === 'light' ? <Leaf size={19} strokeWidth={1.8} /> : <Moon size={19} strokeWidth={1.8} />}
+          <span className="rail-tip">{theme === 'dark' ? '浅色模式' : theme === 'light' ? '护眼模式' : '深色模式'}</span>
         </button>
         {user && (
           <button type="button" className="rail-item rail-logout-btn" onClick={logout} aria-label="退出登录">

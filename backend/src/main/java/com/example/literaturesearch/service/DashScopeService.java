@@ -29,6 +29,13 @@ public class DashScopeService {
      */
     private static final int EMBEDDING_BATCH_SIZE = 10;
 
+    /**
+     * 限流/瞬时错误的自动重试：上传后台处理会连续触发 embedding + 知识抽取，
+     * 免费档位极易撞上 429（Throttling.RateQuota），一次失败不应让整篇文献的知识抽取报废。
+     * 策略与 agent-python/llm.py 一致：优先服务端 Retry-After，否则 5s/15s/30s 指数退避。
+     */
+    private static final int MAX_ATTEMPTS = 4;
+
     private final DashScopeConfig config;
     private final ObjectMapper objectMapper;
 
@@ -61,7 +68,8 @@ public class DashScopeService {
     private List<List<Double>> requestEmbeddings(List<String> texts) {
         Map<String, Object> body = new HashMap<>();
         body.put("model", config.getModelName());
-        body.put("input", texts);
+        // DashScope embedding 接口要求 input 为 {"texts": [...]}，直接传数组会 400 IllegalInput
+        body.put("input", Map.of("texts", texts));
         String responseBody = post(config.getEndpoint(), body);
 
         JsonNode rootNode;
@@ -116,27 +124,34 @@ public class DashScopeService {
         return chatRaw(config.getChatModelName(), systemPrompt, fullPrompt);
     }
 
-    /** 单轮原生对话（无工具） */
     public String chatRaw(String model, String systemPrompt, String userContent) {
+        return chatRaw(model, systemPrompt, userContent, 2048);
+    }
+
+    /**
+     * 单轮原生对话（无工具），maxTokens 可调。对话模型（qwen3.8-flash）仅在
+     * OpenAI 兼容端点提供（chat-endpoint 指向 compatible-mode/v1/chat/completions），
+     * 因此这里使用 OpenAI 报文格式而非 DashScope 原生 input/parameters 格式。
+     * 默认 2048 够 RAG 回答；知识抽取等多字段 JSON 输出需要更大预算，
+     * 否则 JSON 被截断成非法文本导致解析失败（表现为"知识要点抽取无结果"）。
+     */
+    public String chatRaw(String model, String systemPrompt, String userContent, int maxTokens) {
         requireApiKey();
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", model);
-        body.put("input", Map.of("messages", List.of(
+        body.put("messages", List.of(
                 Map.of("role", "system", "content", systemPrompt),
-                Map.of("role", "user", "content", userContent))));
-
-        Map<String, Object> parameters = new HashMap<>();
-        // 不传该参数时可能返回 output.text 而非 output.choices[].message 结构
-        parameters.put("result_format", "message");
-        parameters.put("temperature", 0.7);
-        parameters.put("max_tokens", 2048);
-        body.put("parameters", parameters);
+                Map.of("role", "user", "content", userContent)));
+        // qwen3.8 为思考模型：经典 RAG / 知识抽取这类单轮调用关闭思考，控制延迟并保住输出预算
+        body.put("enable_thinking", false);
+        body.put("temperature", 0.7);
+        body.put("max_tokens", maxTokens);
 
         String responseBody = post(config.getChatEndpoint(), body);
         JsonNode root = parseOrThrow(responseBody);
 
-        JsonNode message = root.path("output").path("choices").path(0).path("message");
+        JsonNode message = root.path("choices").path(0).path("message");
         if (message.isMissingNode()) {
             throw new DashScopeApiException("No message returned: " + truncate(responseBody, 300));
         }
@@ -160,14 +175,60 @@ public class DashScopeService {
                 .post(RequestBody.create(json, MediaType.parse("application/json")))
                 .build();
 
-        try (Response response = okHttpClient.newCall(request).execute()) {
-            String responseBody = response.body() != null ? response.body().string() : "";
-            if (!response.isSuccessful()) {
+        long backoffMs = 5000;
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            try (Response response = okHttpClient.newCall(request).execute()) {
+                String responseBody = response.body() != null ? response.body().string() : "";
+                if (response.isSuccessful()) {
+                    return responseBody;
+                }
+                if (isRetryable(response.code()) && attempt < MAX_ATTEMPTS) {
+                    long waitMs = retryAfterMs(response.header("Retry-After"), backoffMs);
+                    log.warn("DashScope API {} (attempt {}/{}), retrying in {} ms",
+                            response.code(), attempt, MAX_ATTEMPTS, waitMs);
+                    sleepBackoff(waitMs);
+                    backoffMs *= 3;
+                    continue;
+                }
                 throw new DashScopeApiException("DashScope API " + response.code() + ": " + truncate(responseBody, 300));
+            } catch (IOException e) {
+                // 网络抖动同样值得重试：退避后重建连接
+                if (attempt < MAX_ATTEMPTS) {
+                    log.warn("DashScope IO error (attempt {}/{}): {}, retrying in {} ms",
+                            attempt, MAX_ATTEMPTS, e.getMessage(), backoffMs);
+                    sleepBackoff(backoffMs);
+                    backoffMs *= 3;
+                    continue;
+                }
+                throw new DashScopeApiException("Failed to call DashScope API", e);
             }
-            return responseBody;
-        } catch (IOException e) {
-            throw new DashScopeApiException("Failed to call DashScope API", e);
+        }
+        throw new DashScopeApiException("DashScope API failed after " + MAX_ATTEMPTS + " attempts");
+    }
+
+    /** 429 限流与 5xx 服务端错误值得重试；4xx 参数类错误重试无意义。 */
+    private static boolean isRetryable(int statusCode) {
+        return statusCode == 429 || statusCode >= 500;
+    }
+
+    /** 服务端给出 Retry-After 时优先遵循（上限 60s），否则用传入的退避值。 */
+    private static long retryAfterMs(String retryAfterHeader, long fallbackMs) {
+        if (retryAfterHeader == null || retryAfterHeader.isBlank()) {
+            return fallbackMs;
+        }
+        try {
+            return Math.min((long) (Double.parseDouble(retryAfterHeader.trim()) * 1000), 60_000L);
+        } catch (NumberFormatException e) {
+            return fallbackMs;
+        }
+    }
+
+    private static void sleepBackoff(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new DashScopeApiException("Interrupted while waiting for DashScope retry");
         }
     }
 

@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class VectorServiceTest {
 
-    private final VectorService vectorService = new VectorService(null, null, null);
+    private final VectorService vectorService = new VectorService(null, null, null, null);
 
     @Test
     void splitTextIntoChunks_nullOrBlank_returnsEmpty() {

@@ -23,4 +23,10 @@ public class RegisterRequest {
     @NotBlank(message = "密码不能为空")
     @Size(min = 8, message = "密码长度至少8位")
     private String password;
+
+    @NotBlank(message = "验证码ID不能为空")
+    private String captchaId;
+
+    @NotBlank(message = "验证码不能为空")
+    private String captchaCode;
 }

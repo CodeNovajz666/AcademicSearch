@@ -6,13 +6,16 @@ spring:
     name: literature-search
 
   # 支持从项目根目录或 backend 目录下的 .env 文件读取环境变量（.env 已被 .gitignore 忽略）
+  # ../.env 兼容 cd backend && mvn spring-boot:run 的工作目录（JVM cwd=backend/）
   config:
-    import: optional:file:.env[.properties],optional:file:backend/.env[.properties]
+    import: optional:file:.env[.properties],optional:file:backend/.env[.properties],optional:file:../.env[.properties]
 
   datasource:
-    url: jdbc:mysql://localhost:3306/example_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    # 连接参数读 .env / 环境变量（DB_HOST/DB_PORT/DB_NAME），与 agent-python/config.py 同源
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:example_db}?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:123456}
+    # 不提供默认密码：未配置时启动即失败，避免带着弱口令静默运行
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -36,16 +39,22 @@ spring:
 aliyun:
   dashscope:
     api-key: ${DASHSCOPE_API_KEY:}
-    # 官方文档端点，如使用业务空间（Workspace）部署，可改为
-    # https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api/v1/services/... 形式
+    # embedding 走 DashScope 原生端点（text-embedding-v1 仅在原生端点提供）
     endpoint: https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding
-    chat-endpoint: https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation
+    # 对话走 OpenAI 兼容端点：qwen3.8 系列思考模型仅在 compatible-mode 提供，
+    # 原生 text-generation 端点会返回 url error；换回 qwen-turbo 等旧模型时
+    # 需同步改回 https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation
+    # 并删除 DashScopeService.chatRaw 中的 enable_thinking 参数
+    chat-endpoint: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
     model-name: text-embedding-v1
-    chat-model-name: qwen-turbo
+    chat-model-name: qwen3.8-flash
 
 jwt:
-  secret: ${JWT_SECRET:***REMOVED_OLD_JWT_SECRET***}
-  expiration: 86400000
+  # 不提供默认密钥：JWT_SECRET 缺失或弱于 32 字节时启动即失败（见 SecretValidationConfig）
+  secret: ${JWT_SECRET:}
+  # access 令牌 2 小时（过期由前端静默刷新续期，缩短被盗令牌可用窗口）
+  expiration: 7200000
+  # refresh 令牌 7 天（登出时吊销，见 RevokedTokenRepository）
   refresh-expiration: 604800000
 
 app:
@@ -56,6 +65,8 @@ app:
 milvus:
   # 向量库地址（milvus/docker-compose.yml 启动的 standalone 实例）
   uri: ${MILVUS_URI:http://localhost:19530}
+  # embedding 维度须与 DashScope 嵌入模型一致（text-embedding-v1/v2 = 1536），换模型时同步修改
+  embedding-dim: ${MILVUS_EMBEDDING_DIM:1536}
 
 logging:
   level:

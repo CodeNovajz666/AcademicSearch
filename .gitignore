@@ -23,6 +23,12 @@ agent-python/.pip-cache
 agent-python/.venv/
 milvus/volumes/
 
+# 调试残留（令牌 / 验证码抓取脚本输出，严禁提交）
+test-token.txt
+captcha-id.txt
+captcha-*.png
+*.log
+
 # IDE
 .idea/
 .vscode/

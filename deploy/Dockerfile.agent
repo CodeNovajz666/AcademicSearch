@@ -1,0 +1,9 @@
+# Python Agent 服务：FastAPI + MCP 子进程
+# 构建上下文为项目根目录：docker build -f deploy/Dockerfile.agent .
+FROM python:3.12-slim
+WORKDIR /app
+COPY agent-python/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+COPY agent-python/ ./
+EXPOSE 8000
+CMD ["python", "main.py"]

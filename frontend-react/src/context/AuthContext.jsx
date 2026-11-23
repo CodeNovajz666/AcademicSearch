@@ -20,6 +20,17 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener('auth:expired', onExpired)
   }, [navigate, toast])
 
+  // 启动时校验本地会话：localStorage 里的 user 只是缓存，token 可能已过期或被密钥轮换作废。
+  // 不校验会出现"界面显示已登录，一发消息才 401 被登出"的幽灵态；
+  // 校验期间 access 失效会先走静默刷新，刷新也失败才清理并回到登录页。
+  // 仅鉴权失败才清空：网络瞬断保留缓存态，避免用户被打回登录引导卡
+  useEffect(() => {
+    if (!tokenStore.access) return
+    api.me().catch((e) => {
+      if (e?.message?.includes('登录已过期')) setUser(null)
+    })
+  }, [])
+
   const login = async (email, password) => {
     const data = await api.login(email, password)
     tokenStore.save(data)
@@ -34,6 +45,8 @@ export function AuthProvider({ children }) {
   }
 
   const logout = () => {
+    // 先读走 refresh token 发起服务端吊销（盗号止损），再清理本地状态
+    api.logout()
     tokenStore.clear()
     setUser(null)
     toast('已退出登录')
